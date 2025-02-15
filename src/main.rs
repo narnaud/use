@@ -2,7 +2,6 @@ use log::debug;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io;
 use std::io::Write;
 use std::io::BufReader;
 use std::str;
@@ -71,7 +70,7 @@ fn check_config_file(path: std::path::PathBuf) -> bool {
         false => {
             // Ask the user if they want to create the file
             print!("~/{} does not exist, do you want to create it? [y/n] ", CONFIG_FILE_NAME);
-            io::stdout().flush().unwrap();
+            std::io::stdout().flush().unwrap();
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
 

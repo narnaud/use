@@ -1,6 +1,7 @@
 use std::{io::{self, Write}, str};
+use log::debug;
 
-static CONFIG_FILE_NAME: &str = ".useconfig2.json";
+static CONFIG_FILE_NAME: &str = ".useconfig.json";
 static CONFIG_FILE_EXAMPLE: &str = r#"
 {
     "example": {
@@ -84,10 +85,13 @@ fn check_config_file(path: std::path::PathBuf) -> bool {
 }
 
 fn main() {
+    env_logger::init();
+
     let mut config_file = get_home_dir().expect("Could not find home directory");
     config_file.push(CONFIG_FILE_NAME);
 
-    if !check_config_file(config_file) {
+    if !check_config_file(config_file.clone()) {
         std::process::exit(0);
     }
+    debug!("Config file: {:?}", config_file.to_str().unwrap());
 }

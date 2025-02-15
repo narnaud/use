@@ -1,19 +1,25 @@
-use std::{io::{self, Write}, str};
 use log::debug;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io;
+use std::io::Write;
+use std::io::BufReader;
+use std::str;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.json";
 static CONFIG_FILE_EXAMPLE: &str = r#"
 {
     "example": {
         "display": "Name of the configuration",
-        "scripts": [
-            "C:/example/path/to/script.bat",
-            "C:/example/other/path/to/script.bat"
-        ],
         "use": [
             "other",
             "configuration",
             "names"
+        ],
+        "scripts": [
+            "C:/example/path/to/script.bat",
+            "C:/example/other/path/to/script.bat"
         ],
         "set": {
             "EXAMPLE_VAR": "example value"
@@ -51,11 +57,6 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
 }
 "#;
 
-/// Function to get the current home directory
-fn get_home_dir() -> Option<std::path::PathBuf> {
-    dirs::home_dir()
-}
-
 /// Create a config file in the home directory if it does not exist
 fn create_config_file_example(path: &str) {
     // Open the file and writhe the CONFIG_FILE_CONTENT to it
@@ -84,14 +85,43 @@ fn check_config_file(path: std::path::PathBuf) -> bool {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct Configuration {
+    display: Option<String>,
+    scripts: Option<Vec<String>>,
+    set: Option<HashMap<String, String>>,
+    append: Option<HashMap<String, String>>,
+    path: Option<Vec<String>>,
+    #[serde(rename = "use")]
+    reuse: Option<Vec<String>>,
+    go: Option<String>,
+}
+
+/// Read the congig file and return a map of configurations
+fn read_config_file(file_path: &str) -> Result<HashMap<String, Configuration>, Box<dyn std::error::Error>> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+    let config = serde_json::from_reader(reader)?;
+    Ok(config)
+}
+
 fn main() {
     env_logger::init();
 
-    let mut config_file = get_home_dir().expect("Could not find home directory");
+    let mut config_file = dirs::home_dir().expect("Could not find home directory");
     config_file.push(CONFIG_FILE_NAME);
 
     if !check_config_file(config_file.clone()) {
         std::process::exit(0);
     }
-    debug!("Config file: {:?}", config_file.to_str().unwrap());
+    debug!("Find config file: {:?}", config_file.to_str().unwrap());
+
+    let configs = match read_config_file(config_file.to_str().unwrap()) {
+        Ok(config) => config,
+        Err(e) => {
+            println!("Error reading ~/{} file: {}", CONFIG_FILE_NAME, e);
+            std::process::exit(1);
+        }
+    };
+    debug!("Read config file");
 }

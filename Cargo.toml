@@ -1,0 +1,11 @@
+[package]
+name = "use_cli"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "use"
+path = "src/main.rs"
+
+[dependencies]
+dirs = "4.0"

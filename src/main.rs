@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::io::BufReader;
+use std::result;
 use std::str;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.json";
@@ -66,6 +67,7 @@ struct Environment {
     scripts: Option<Vec<String>>,
     set: Option<HashMap<String, String>>,
     append: Option<HashMap<String, String>>,
+    prepend: Option<HashMap<String, String>>,
     path: Option<Vec<String>>,
     #[serde(rename = "use")]
     reuse: Option<Vec<String>>,
@@ -135,12 +137,7 @@ fn main() {
     let mut use_envs = get_use_environments(env_name.as_str(), &environments);
     use_envs.reverse();
 
-    // Print the environment name and display name
-    for env in use_envs.iter() {
-        if let Some(display) = &env.display {
-            println!("{}", display);
-        }
-    }
+    let env = merge_environments(use_envs);
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -193,3 +190,45 @@ fn get_use_environments(
     use_envs
 }
 
+/// Merge all environments into one environment
+fn merge_environments(envs: Vec<Environment>) -> Environment {
+    let mut result_env = envs[0].clone();
+
+    // Merge all environments into one
+    for env in envs.iter().skip(1) {
+        if let Some(display) = env.display.as_ref() {
+            result_env.display = Some(display.clone());
+        }
+        if let Some(scripts) = env.scripts.as_ref() {
+            let mut result_scripts = result_env.scripts.clone().unwrap_or_default();
+            result_scripts.extend(scripts.iter().cloned());
+            result_env.scripts = Some(result_scripts);
+        }
+        if let Some(set) = env.set.as_ref() {
+            let mut result_set = result_env.set.clone().unwrap_or_default();
+            result_set.extend(set.clone());
+            result_env.set = Some(result_set);
+        }
+        if let Some(append) = env.append.as_ref() {
+            let mut result_append = result_env.append.clone().unwrap_or_default();
+            result_append.extend(append.clone());
+            result_env.append = Some(result_append);
+        }
+        if let Some(prepend) = env.prepend.as_ref() {
+            let mut result_prepend = result_env.prepend.clone().unwrap_or_default();
+            result_prepend.extend(prepend.clone());
+            result_env.prepend = Some(result_prepend);
+        }
+        if let Some(path) = env.path.as_ref() {
+            let mut result_path = result_env.path.clone().unwrap_or_default();
+            result_path.extend(path.iter().cloned());
+            result_env.path = Some(result_path);
+        }
+        if let Some(go) = env.go.as_ref() {
+            result_env.go = Some(go.clone());
+        }
+
+    }
+
+    result_env
+}

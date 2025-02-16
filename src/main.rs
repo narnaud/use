@@ -1,3 +1,4 @@
+use clap::Parser;
 use log::debug;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -43,6 +44,9 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
     },
     "qt6.8": {
         "display": "Qt 6.8.2 - MSVC - x64",
+        "use": [
+            "msvc2022"
+        ],
         "set": {
             "QTDIR": "C:/Qt/6.8.2/msvc2019_64/"
         },
@@ -56,34 +60,6 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
 }
 "#;
 
-/// Create a config file in the home directory if it does not exist
-fn create_config_file_example(path: &str) {
-    // Open the file and writhe the CONFIG_FILE_CONTENT to it
-    let mut file = std::fs::File::create(path).expect("Failed to create file");
-    file.write_all(CONFIG_FILE_EXAMPLE.as_bytes()).expect("Failed to write to file");
-}
-
-/// Check the config file, and create one if the user wants to
-fn check_config_file(path: std::path::PathBuf) -> bool {
-    match path.exists() {
-        true => true,
-        false => {
-            // Ask the user if they want to create the file
-            print!("~/{} does not exist, do you want to create it? [y/n] ", CONFIG_FILE_NAME);
-            std::io::stdout().flush().unwrap();
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-
-            // Check if the input is 'y'
-            if input.trim() == "y" {
-                create_config_file_example(path.to_str().unwrap());
-                println!("~/{} created with some example content.", CONFIG_FILE_NAME);
-            }
-            false
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
 struct Configuration {
     display: Option<String>,
@@ -96,6 +72,69 @@ struct Configuration {
     go: Option<String>,
 }
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Name of the configuration to use
+    config_name: Option<String>,
+    /// List all configurations
+    #[clap(short, long)]
+    list: bool,
+    /// Create a new configuration file
+    #[clap(short, long)]
+    create: bool,
+}
+
+fn main() {
+    env_logger::init();
+
+    let args = Args::parse();
+
+    let mut config_file = dirs::home_dir().expect("Could not find home directory");
+    config_file.push(CONFIG_FILE_NAME);
+
+    if !config_file.exists() {
+        print!("Error ~/{} does not exist", CONFIG_FILE_NAME);
+        std::process::exit(1);
+    }
+    debug!("Find config file: {:?}", config_file.to_str().unwrap());
+
+    let configs = match read_config_file(config_file.to_str().unwrap()) {
+        Ok(configs) => configs,
+        Err(e) => {
+            println!("Error reading ~/{} file: {}", CONFIG_FILE_NAME, e);
+            std::process::exit(1);
+        }
+    };
+    debug!("Read config file");
+
+    if args.create {
+        create_config_file(config_file.to_str().unwrap());
+        println!("Created ~/{} file", CONFIG_FILE_NAME);
+        std::process::exit(0);
+    }
+    if args.list {
+        list_configs(configs);
+        std::process::exit(0);
+    }
+
+    let config_name = match args.config_name {
+        Some(config_name) => config_name,
+        None => {
+            list_configs(configs);
+            std::process::exit(0);
+        }
+    };
+
+}
+
+/// Create a config file in the home directory if it does not exist
+fn create_config_file(path: &str) {
+    // Open the file and writhe the CONFIG_FILE_CONTENT to it
+    let mut file = std::fs::File::create(path).expect("Failed to create file");
+    file.write_all(CONFIG_FILE_EXAMPLE.as_bytes()).expect("Failed to write to file");
+}
+
 /// Read the congig file and return a map of configurations
 fn read_config_file(file_path: &str) -> Result<HashMap<String, Configuration>, Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
@@ -104,23 +143,12 @@ fn read_config_file(file_path: &str) -> Result<HashMap<String, Configuration>, B
     Ok(config)
 }
 
-fn main() {
-    env_logger::init();
-
-    let mut config_file = dirs::home_dir().expect("Could not find home directory");
-    config_file.push(CONFIG_FILE_NAME);
-
-    if !check_config_file(config_file.clone()) {
-        std::process::exit(0);
+/// Function to print the keys of the configurations
+fn list_configs(configs: HashMap<String, Configuration>) {
+    // Get keys from configs map, sort then and print them
+    let mut keys: Vec<&String> = configs.keys().collect();
+    keys.sort();
+    for key in keys {
+        println!("{}", key);
     }
-    debug!("Find config file: {:?}", config_file.to_str().unwrap());
-
-    let configs = match read_config_file(config_file.to_str().unwrap()) {
-        Ok(config) => config,
-        Err(e) => {
-            println!("Error reading ~/{} file: {}", CONFIG_FILE_NAME, e);
-            std::process::exit(1);
-        }
-    };
-    debug!("Read config file");
 }

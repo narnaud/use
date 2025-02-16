@@ -132,10 +132,9 @@ fn main() {
             std::process::exit(0);
         }
     };
+    debug!("Use environment: {}", env_name);
 
-    let mut use_envs = get_use_environments(env_name.as_str(), &environments);
-    use_envs.reverse();
-
+    let use_envs = get_use_environments(env_name.as_str(), &environments);
     let env = merge_environments(use_envs);
     print_environment(&env);
 }
@@ -158,11 +157,9 @@ fn read_config_file(file_path: &str) -> Result<HashMap<String, Environment>, Box
 /// Function to list all environments in the config file
 fn list_environments(configs: HashMap<String, Environment>) {
     // Get keys from configs map, sort then and print them
-    let mut keys: Vec<&String> = configs.keys().collect();
+    let mut keys: Vec<_> = configs.keys().collect();
     keys.sort();
-    for key in keys {
-        println!("{}", key);
-    }
+    keys.iter().for_each(|key| println!("{}", key));
 }
 
 /// List all environment that should be used based on the environment name
@@ -187,6 +184,7 @@ fn get_use_environments(
         }
     }
 
+    use_envs.reverse();
     use_envs
 }
 
@@ -196,38 +194,13 @@ fn merge_environments(envs: Vec<Environment>) -> Environment {
 
     // Merge all environments into one
     for env in envs.iter().skip(1) {
-        if let Some(display) = env.display.as_ref() {
-            result_env.display = Some(display.clone());
-        }
-        if let Some(scripts) = env.defer.as_ref() {
-            let mut result_scripts = result_env.defer.clone().unwrap_or_default();
-            result_scripts.extend(scripts.iter().cloned());
-            result_env.defer = Some(result_scripts);
-        }
-        if let Some(set) = env.set.as_ref() {
-            let mut result_set = result_env.set.clone().unwrap_or_default();
-            result_set.extend(set.clone());
-            result_env.set = Some(result_set);
-        }
-        if let Some(append) = env.append.as_ref() {
-            let mut result_append = result_env.append.clone().unwrap_or_default();
-            result_append.extend(append.clone());
-            result_env.append = Some(result_append);
-        }
-        if let Some(prepend) = env.prepend.as_ref() {
-            let mut result_prepend = result_env.prepend.clone().unwrap_or_default();
-            result_prepend.extend(prepend.clone());
-            result_env.prepend = Some(result_prepend);
-        }
-        if let Some(path) = env.path.as_ref() {
-            let mut result_path = result_env.path.clone().unwrap_or_default();
-            result_path.extend(path.iter().cloned());
-            result_env.path = Some(result_path);
-        }
-        if let Some(go) = env.go.as_ref() {
-            result_env.go = Some(go.clone());
-        }
-
+        result_env.display = env.display.clone().or(result_env.display);
+        result_env.defer.get_or_insert_with(Vec::new).extend(env.defer.clone().unwrap_or_default());
+        result_env.set.get_or_insert_with(HashMap::new).extend(env.set.clone().unwrap_or_default());
+        result_env.append.get_or_insert_with(HashMap::new).extend(env.append.clone().unwrap_or_default());
+        result_env.prepend.get_or_insert_with(HashMap::new).extend(env.prepend.clone().unwrap_or_default());
+        result_env.path.get_or_insert_with(Vec::new).extend(env.path.clone().unwrap_or_default());
+        result_env.go = env.go.clone().or(result_env.go);
     }
 
     result_env
@@ -235,34 +208,30 @@ fn merge_environments(envs: Vec<Environment>) -> Environment {
 
 /// Print the environment to the console
 fn print_environment(env: &Environment) {
+    let print_map = |label: &str, map: &Option<HashMap<String, String>>| {
+        if let Some(map) = map {
+            for (key, value) in map {
+                println!("{}: {} = {}", label, key, value);
+            }
+        }
+    };
+
+    let print_vec = |label: &str, vec: &Option<Vec<String>>| {
+        if let Some(vec) = vec {
+            for item in vec {
+                println!("{}: {}", label, item);
+            }
+        }
+    };
+
     if let Some(display) = &env.display {
         println!("DISPLAY: {}", display);
     }
-    if let Some(scripts) = &env.defer {
-        for script in scripts {
-            println!("DEFER: {}", script);
-        }
-    }
-    if let Some(set) = &env.set {
-        for (key, value) in set {
-            println!("SET: {} = {}", key, value);
-        }
-    }
-    if let Some(append) = &env.append {
-        for (key, value) in append {
-            println!("APPEND: {} = {}", key, value);
-        }
-    }
-    if let Some(prepend) = &env.prepend {
-        for (key, value) in prepend {
-            println!("PREPEND: {} = {}", key, value);
-        }
-    }
-    if let Some(path) = &env.path {
-        for p in path {
-            println!("PATH: {}", p);
-        }
-    }
+    print_vec("DEFER", &env.defer);
+    print_map("SET", &env.set);
+    print_map("APPEND", &env.append);
+    print_map("PREPEND", &env.prepend);
+    print_vec("PATH", &env.path);
     if let Some(go) = &env.go {
         println!("GO: {}", go);
     }

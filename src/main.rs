@@ -18,8 +18,8 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "names"
         ],
         "scripts": [
-            "C:/example/path/to/script.bat",
-            "C:/example/other/path/to/script.bat"
+            "C:\\example\\path\\to\\script.bat",
+            "C:\\example\\other\\path\\to\\script.bat"
         ],
         "set": {
             "EXAMPLE_VAR": "example value"
@@ -31,15 +31,15 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "EXAMPLE_VAR_PREPEND": "value prepended to EXAMPLE_VAR_PREPEND"
         },
         "path": [
-            "C:/example/path/to/add/to/path",
-            "C:/example/other/path/to/add/to/path"
+            "C:\\example\\path\\to\\add\\to\\path",
+            "C:\\example\\other\\path\\to\\add\\to\\path"
         ],
-        "go": "C:/example/path/to/go/to",
+        "go": "C:\\example\\path\\to\\go\\to",
     },
     "msvc2022": {
         "display": "Microsoft Visual Studio 2022 - x64",
         "scripts": [
-            "C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Auxiliary/Build/vcvars64.bat"
+            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat"
         ]
     },
     "qt6.8": {
@@ -48,20 +48,20 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "msvc2022"
         ],
         "set": {
-            "QTDIR": "C:/Qt/6.8.2/msvc2019_64/"
+            "QTDIR": "C:\\Qt\\6.8.2\\msvc2019_64\\"
         },
         "append": {
-            "CMAKE_PREFIX_PATH": "C:/Qt/6.8.2/msvc2019_64/"
+            "CMAKE_PREFIX_PATH": "C:\\Qt\\6.8.2\\msvc2019_64\\"
         },
         "path": [
-            "C:/Qt/6.8.2/msvc2019_64/bin"
+            "C:\\Qt\\6.8.2\\msvc2019_64\\bin"
         ]
     },
 }
 "#;
 
-#[derive(Debug, Deserialize)]
-struct Configuration {
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+struct Environment {
     display: Option<String>,
     scripts: Option<Vec<String>>,
     set: Option<HashMap<String, String>>,
@@ -75,12 +75,12 @@ struct Configuration {
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Name of the configuration to use
-    config_name: Option<String>,
-    /// List all configurations
+    /// Name of the environment to use
+    env_name: Option<String>,
+    /// List all environments
     #[clap(short, long)]
     list: bool,
-    /// Create a new configuration file
+    /// Create a new config file
     #[clap(short, long)]
     create: bool,
 }
@@ -99,8 +99,8 @@ fn main() {
     }
     debug!("Find config file: {:?}", config_file.to_str().unwrap());
 
-    let configs = match read_config_file(config_file.to_str().unwrap()) {
-        Ok(configs) => configs,
+    let environments = match read_config_file(config_file.to_str().unwrap()) {
+        Ok(envrionments) => envrionments,
         Err(e) => {
             println!("Error reading ~/{} file: {}", CONFIG_FILE_NAME, e);
             std::process::exit(1);
@@ -114,18 +114,33 @@ fn main() {
         std::process::exit(0);
     }
     if args.list {
-        list_configs(configs);
+        list_environments(environments);
         std::process::exit(0);
     }
 
-    let config_name = match args.config_name {
-        Some(config_name) => config_name,
+    let env_name = match args.env_name {
+        Some(env_name) => match environments.get(&env_name) {
+            Some(_) => env_name,
+            None => {
+                println!("Error: Environment {} not found", env_name);
+                std::process::exit(1);
+            }
+        },
         None => {
-            list_configs(configs);
+            list_environments(environments);
             std::process::exit(0);
         }
     };
 
+    let mut use_envs = get_use_environments(env_name.as_str(), &environments);
+    use_envs.reverse();
+
+    // Print the environment name and display name
+    for env in use_envs.iter() {
+        if let Some(display) = &env.display {
+            println!("{}", display);
+        }
+    }
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -135,16 +150,16 @@ fn create_config_file(path: &str) {
     file.write_all(CONFIG_FILE_EXAMPLE.as_bytes()).expect("Failed to write to file");
 }
 
-/// Read the congig file and return a map of configurations
-fn read_config_file(file_path: &str) -> Result<HashMap<String, Configuration>, Box<dyn std::error::Error>> {
+/// Read the congig file and return a map of environments
+fn read_config_file(file_path: &str) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let config = serde_json::from_reader(reader)?;
     Ok(config)
 }
 
-/// Function to print the keys of the configurations
-fn list_configs(configs: HashMap<String, Configuration>) {
+/// Function to list all environments in the config file
+fn list_environments(configs: HashMap<String, Environment>) {
     // Get keys from configs map, sort then and print them
     let mut keys: Vec<&String> = configs.keys().collect();
     keys.sort();
@@ -152,3 +167,29 @@ fn list_configs(configs: HashMap<String, Configuration>) {
         println!("{}", key);
     }
 }
+
+/// List all environment that should be used based on the environment name
+fn get_use_environments(
+    env_name: &str,
+    envs: &HashMap<String, Environment>,
+) -> Vec<Environment> {
+    let mut use_envs: Vec<Environment> = Vec::new();
+    let env = envs.get(env_name).unwrap();
+    use_envs.push(env.clone());
+
+    if let Some(reuse) = env.reuse.as_ref() {
+        for env_name in reuse.iter() {
+            let reuse_envs = get_use_environments(env_name, envs);
+            // Add the environment to the list of environments to use
+            // Only if it is not already in the list
+            for reuse_env in reuse_envs.iter() {
+                if !use_envs.contains(reuse_env) {
+                    use_envs.push(reuse_env.clone());
+                }
+            }
+        }
+    }
+
+    use_envs
+}
+

@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::io::BufReader;
-use std::result;
 use std::str;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.json";
@@ -18,7 +17,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "configuration",
             "names"
         ],
-        "scripts": [
+        "defer": [
             "C:\\example\\path\\to\\script.bat",
             "C:\\example\\other\\path\\to\\script.bat"
         ],
@@ -39,7 +38,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
     },
     "msvc2022": {
         "display": "Microsoft Visual Studio 2022 - x64",
-        "scripts": [
+        "defer": [
             "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat"
         ]
     },
@@ -64,7 +63,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 struct Environment {
     display: Option<String>,
-    scripts: Option<Vec<String>>,
+    defer: Option<Vec<String>>,
     set: Option<HashMap<String, String>>,
     append: Option<HashMap<String, String>>,
     prepend: Option<HashMap<String, String>>,
@@ -138,6 +137,7 @@ fn main() {
     use_envs.reverse();
 
     let env = merge_environments(use_envs);
+    print_environment(&env);
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -199,10 +199,10 @@ fn merge_environments(envs: Vec<Environment>) -> Environment {
         if let Some(display) = env.display.as_ref() {
             result_env.display = Some(display.clone());
         }
-        if let Some(scripts) = env.scripts.as_ref() {
-            let mut result_scripts = result_env.scripts.clone().unwrap_or_default();
+        if let Some(scripts) = env.defer.as_ref() {
+            let mut result_scripts = result_env.defer.clone().unwrap_or_default();
             result_scripts.extend(scripts.iter().cloned());
-            result_env.scripts = Some(result_scripts);
+            result_env.defer = Some(result_scripts);
         }
         if let Some(set) = env.set.as_ref() {
             let mut result_set = result_env.set.clone().unwrap_or_default();
@@ -231,4 +231,39 @@ fn merge_environments(envs: Vec<Environment>) -> Environment {
     }
 
     result_env
+}
+
+/// Print the environment to the console
+fn print_environment(env: &Environment) {
+    if let Some(display) = &env.display {
+        println!("DISPLAY: {}", display);
+    }
+    if let Some(scripts) = &env.defer {
+        for script in scripts {
+            println!("DEFER: {}", script);
+        }
+    }
+    if let Some(set) = &env.set {
+        for (key, value) in set {
+            println!("SET: {} = {}", key, value);
+        }
+    }
+    if let Some(append) = &env.append {
+        for (key, value) in append {
+            println!("APPEND: {} = {}", key, value);
+        }
+    }
+    if let Some(prepend) = &env.prepend {
+        for (key, value) in prepend {
+            println!("PREPEND: {} = {}", key, value);
+        }
+    }
+    if let Some(path) = &env.path {
+        for p in path {
+            println!("PATH: {}", p);
+        }
+    }
+    if let Some(go) = &env.go {
+        println!("GO: {}", go);
+    }
 }

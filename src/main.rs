@@ -120,7 +120,7 @@ fn main() {
     }
 
     let env_name = match args.env_name {
-        Some(env_name) => match environments.get(&env_name) {
+        Some(env_name) => match environments.get(env_name.as_str()) {
             Some(_) => env_name,
             None => {
                 println!("Error: Environment {} not found", env_name);
@@ -134,9 +134,12 @@ fn main() {
     };
     debug!("Use environment: {}", env_name);
 
-    let use_envs = get_use_environments(env_name.as_str(), &environments);
-    let env = merge_environments(use_envs);
-    print_environment(&env);
+    let env_names = list_all_envs_for(env_name, &environments);
+
+    for env_name in env_names.iter().rev() {
+        let env = environments.get(env_name).unwrap();
+        print_environment(env);
+    }
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -155,55 +158,35 @@ fn read_config_file(file_path: &str) -> Result<HashMap<String, Environment>, Box
 }
 
 /// Function to list all environments in the config file
-fn list_environments(configs: HashMap<String, Environment>) {
+fn list_environments(envs: HashMap<String, Environment>) {
     // Get keys from configs map, sort then and print them
-    let mut keys: Vec<_> = configs.keys().collect();
+    let mut keys: Vec<_> = envs.keys().collect();
     keys.sort();
     keys.iter().for_each(|key| println!("{}", key));
 }
 
 /// List all environment that should be used based on the environment name
-fn get_use_environments(
-    env_name: &str,
+fn list_all_envs_for(
+    env_name: String,
     envs: &HashMap<String, Environment>,
-) -> Vec<Environment> {
-    let mut use_envs: Vec<Environment> = Vec::new();
-    let env = envs.get(env_name).unwrap();
-    use_envs.push(env.clone());
+) -> Vec<String> {
+    let mut env_names = vec![env_name.clone()];
+    let env = envs.get(env_name.as_str()).unwrap();
 
     if let Some(reuse) = env.reuse.as_ref() {
         for env_name in reuse.iter() {
-            let reuse_envs = get_use_environments(env_name, envs);
+            let reuse_env_names = list_all_envs_for(env_name.clone(), envs);
             // Add the environment to the list of environments to use
             // Only if it is not already in the list
-            for reuse_env in reuse_envs.iter() {
-                if !use_envs.contains(reuse_env) {
-                    use_envs.push(reuse_env.clone());
+            for reuse_env_name in reuse_env_names.iter() {
+                if !env_names.contains(reuse_env_name) {
+                    env_names.push(reuse_env_name.clone());
                 }
             }
         }
     }
 
-    use_envs.reverse();
-    use_envs
-}
-
-/// Merge all environments into one environment
-fn merge_environments(envs: Vec<Environment>) -> Environment {
-    let mut result_env = envs[0].clone();
-
-    // Merge all environments into one
-    for env in envs.iter().skip(1) {
-        result_env.display = env.display.clone().or(result_env.display);
-        result_env.defer.get_or_insert_with(Vec::new).extend(env.defer.clone().unwrap_or_default());
-        result_env.set.get_or_insert_with(HashMap::new).extend(env.set.clone().unwrap_or_default());
-        result_env.append.get_or_insert_with(HashMap::new).extend(env.append.clone().unwrap_or_default());
-        result_env.prepend.get_or_insert_with(HashMap::new).extend(env.prepend.clone().unwrap_or_default());
-        result_env.path.get_or_insert_with(Vec::new).extend(env.path.clone().unwrap_or_default());
-        result_env.go = env.go.clone().or(result_env.go);
-    }
-
-    result_env
+    env_names
 }
 
 /// Print the environment to the console

@@ -91,50 +91,45 @@ fn main() {
 
     let args = Args::parse();
 
-    let mut config_file = dirs::home_dir().expect("Could not find home directory");
-    config_file.push(CONFIG_FILE_NAME);
+    let mut config_file_path = dirs::home_dir().expect("Could not find home directory");
+    config_file_path.push(CONFIG_FILE_NAME);
+    let config_file = config_file_path.to_str().unwrap();
 
-    if !config_file.exists() {
-        print!("Error ~/{} does not exist", CONFIG_FILE_NAME);
+    if args.create {
+        create_config_file(config_file);
+        println!("Created {} file", config_file);
+        std::process::exit(0);
+    }
+
+    if !config_file_path.exists() {
+        print!("Error {} does not exist", config_file);
         std::process::exit(1);
     }
-    debug!("Find config file: {:?}", config_file.to_str().unwrap());
+    debug!("Find config file: {}", config_file);
 
-    let environments = match read_config_file(config_file.to_str().unwrap()) {
-        Ok(envrionments) => envrionments,
+    let environments = match read_config_file(config_file) {
+        Ok(environments) => environments,
         Err(e) => {
-            println!("Error reading ~/{} file: {}", CONFIG_FILE_NAME, e);
+            println!("Error reading {} file: {}", config_file, e);
             std::process::exit(1);
         }
     };
     debug!("Read config file");
 
-    if args.create {
-        create_config_file(config_file.to_str().unwrap());
-        println!("Created ~/{} file", CONFIG_FILE_NAME);
-        std::process::exit(0);
-    }
-    if args.list {
+    if args.list || args.env_name.is_none() {
         list_environments(environments);
         std::process::exit(0);
     }
 
-    let env_name = match args.env_name {
-        Some(env_name) => match environments.get(env_name.as_str()) {
-            Some(_) => env_name,
-            None => {
-                println!("Error: Environment {} not found", env_name);
-                std::process::exit(1);
-            }
-        },
-        None => {
-            list_environments(environments);
-            std::process::exit(0);
-        }
-    };
+    let env_name = args.env_name.unwrap();
+    if !environments.contains_key(env_name.as_str()) {
+        println!("Error: Environment {} not found", env_name);
+        std::process::exit(1);
+    }
     debug!("Use environment: {}", env_name);
 
     let env_names = list_all_envs_for(env_name, &environments);
+    debug!("Setup environments: {:?}", env_names);
 
     for env_name in env_names.iter().rev() {
         let env = environments.get(env_name).unwrap();

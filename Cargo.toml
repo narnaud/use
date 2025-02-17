@@ -1,11 +1,7 @@
 [package]
-name = "use_cli"
+name = "use_env"
 version = "0.1.0"
 edition = "2021"
-
-[[bin]]
-name = "use_env"
-path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }

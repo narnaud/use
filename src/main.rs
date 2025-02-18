@@ -3,8 +3,8 @@ use log::debug;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Write;
 use std::io::BufReader;
+use std::io::Write;
 use std::str;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.json";
@@ -89,12 +89,11 @@ struct Args {
 fn main() {
     env_logger::init();
 
-    let args = Args::parse();
-
     let mut config_file_path = dirs::home_dir().expect("Could not find home directory");
     config_file_path.push(CONFIG_FILE_NAME);
-    let config_file = config_file_path.to_str().unwrap();
+    let config_file = config_file_path.to_str().expect("Could not convert path to string");
 
+    let args = Args::parse();
     if args.create {
         create_config_file(config_file);
         println!("Created {} file", config_file);
@@ -107,13 +106,10 @@ fn main() {
     }
     debug!("Find config file: {}", config_file);
 
-    let environments = match read_config_file(config_file) {
-        Ok(environments) => environments,
-        Err(e) => {
-            println!("Error reading {} file: {}", config_file, e);
-            std::process::exit(1);
-        }
-    };
+    let environments = read_config_file(config_file).unwrap_or_else(|e| {
+        println!("Error reading {} file: {}", config_file, e);
+        std::process::exit(1);
+    });
     debug!("Read config file");
 
     if args.list || args.env_name.is_none() {
@@ -122,10 +118,6 @@ fn main() {
     }
 
     let env_name = args.env_name.unwrap();
-    if !environments.contains_key(env_name.as_str()) {
-        println!("Error: Environment {} not found", env_name);
-        std::process::exit(1);
-    }
     debug!("Use environment: {}", env_name);
 
     let env_names = list_all_envs_for(env_name, &environments);
@@ -141,11 +133,14 @@ fn main() {
 fn create_config_file(path: &str) {
     // Open the file and writhe the CONFIG_FILE_CONTENT to it
     let mut file = std::fs::File::create(path).expect("Failed to create file");
-    file.write_all(CONFIG_FILE_EXAMPLE.as_bytes()).expect("Failed to write to file");
+    file.write_all(CONFIG_FILE_EXAMPLE.as_bytes())
+        .expect("Failed to write to file");
 }
 
 /// Read the congig file and return a map of environments
-fn read_config_file(file_path: &str) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
+fn read_config_file(
+    file_path: &str,
+) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let config = serde_json::from_reader(reader)?;
@@ -161,23 +156,22 @@ fn list_environments(envs: HashMap<String, Environment>) {
 }
 
 /// List all environment that should be used based on the environment name
-fn list_all_envs_for(
-    env_name: String,
-    envs: &HashMap<String, Environment>,
-) -> Vec<String> {
+fn list_all_envs_for(env_name: String, envs: &HashMap<String, Environment>) -> Vec<String> {
+    if !envs.contains_key(env_name.as_str()) {
+        println!("Error: Environment {} not found", env_name);
+        std::process::exit(1);
+    }
+
     let mut env_names = vec![env_name.clone()];
     let env = envs.get(env_name.as_str()).unwrap();
 
     if let Some(reuse) = env.reuse.as_ref() {
         for env_name in reuse.iter() {
-            let reuse_env_names = list_all_envs_for(env_name.clone(), envs);
-            // Add the environment to the list of environments to use
-            // Only if it is not already in the list
-            for reuse_env_name in reuse_env_names.iter() {
-                if !env_names.contains(reuse_env_name) {
-                    env_names.push(reuse_env_name.clone());
-                }
-            }
+            let reuse_env_names = list_all_envs_for(env_name.clone(), envs)
+                .into_iter()
+                .filter(|name| !env_names.contains(name))
+                .collect::<Vec<String>>();
+            env_names.extend(reuse_env_names);
         }
     }
 

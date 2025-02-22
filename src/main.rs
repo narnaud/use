@@ -91,7 +91,9 @@ fn main() {
 
     let mut config_file_path = dirs::home_dir().expect("Could not find home directory");
     config_file_path.push(CONFIG_FILE_NAME);
-    let config_file = config_file_path.to_str().expect("Could not convert path to string");
+    let config_file = config_file_path
+        .to_str()
+        .expect("Could not convert path to string");
 
     let args = Args::parse();
     if args.create {
@@ -137,7 +139,7 @@ fn create_config_file(path: &str) {
         .expect("Failed to write to file");
 }
 
-/// Read the congig file and return a map of environments
+/// Read the config file and return a map of environments
 fn read_config_file(
     file_path: &str,
 ) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
@@ -222,7 +224,7 @@ fn print_add_value(key: &String, value: &String, append: bool) {
     match std::env::var(key) {
         // If the variable exists append the value to it using ; on windows, and : on linux
         Ok(current) => {
-            let sep = if cfg!(windows) {';'} else {':'};
+            let sep = if cfg!(windows) { ';' } else { ':' };
             let new_value = if append {
                 format!("{current}{sep}{value}")
             } else {
@@ -233,4 +235,3 @@ fn print_add_value(key: &String, value: &String, append: bool) {
         Err(_) => println!("SET: {}={}", key, value),
     }
 }
-

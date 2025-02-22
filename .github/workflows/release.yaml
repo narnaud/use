@@ -1,0 +1,64 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release_please:
+    # Update release PR
+    name: Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: rust
+          target-branch:
+  build_and_publish:
+    # Build and release binary
+    name: Build release binaries for ${{ matrix.target }}
+    needs: release_please
+    if: ${{ needs.release_please.outputs.release_created == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+      - name: Setup | Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+      - name: Build | Cargo
+        run: cargo build --release --target ${{ matrix.target }} --color=always
+      - name: Post Build | Package [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          7z a use-${{ matrix.target }}.zip `
+            LICENSE README.md ./shell/cmd/use.cmd `
+            ./target/${{ matrix.target }}/release/use_env.exe
+      - name: Post Build | Checksums
+        shell: bash
+        run: for file in use-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
+      - name: Post Build | Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            *.deb
+            *.tar.gz
+            *.zip
+            *.sha256
+      - name: Publish | Add Artifacts to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.deb
+            *.tar.gz
+            *.zip
+            *.sha256

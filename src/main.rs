@@ -180,14 +180,6 @@ fn list_all_envs_for(env_name: String, envs: &HashMap<String, Environment>) -> V
 
 /// Print the environment to the console
 fn print_environment(env: &Environment) {
-    let print_map = |label: &str, map: &Option<HashMap<String, String>>| {
-        if let Some(map) = map {
-            for (key, value) in map {
-                println!("{}: {} = {}", label, key, value);
-            }
-        }
-    };
-
     let print_vec = |label: &str, vec: &Option<Vec<String>>| {
         if let Some(vec) = vec {
             for item in vec {
@@ -196,15 +188,49 @@ fn print_environment(env: &Environment) {
         }
     };
 
+    let print_set = |map: &Option<HashMap<String, String>>| {
+        if let Some(map) = map {
+            for (key, value) in map {
+                println!("SET: {}={}", key, value);
+            }
+        }
+    };
+
+    let print_add = |map: &Option<HashMap<String, String>>, append: bool| {
+        if let Some(map) = map {
+            for (key, value) in map {
+                print_add_value(key, value, append);
+            }
+        }
+    };
+
     if let Some(display) = &env.display {
-        println!("DISPLAY: {}", display);
+        println!("Setting up {} environment", display);
     }
     print_vec("DEFER", &env.defer);
-    print_map("SET", &env.set);
-    print_map("APPEND", &env.append);
-    print_map("PREPEND", &env.prepend);
+    print_set(&env.set);
+    print_add(&env.append, true);
+    print_add(&env.prepend, false);
     print_vec("PATH", &env.path);
     if let Some(go) = &env.go {
         println!("GO: {}", go);
     }
 }
+
+/// Append or prepend a value to an environment variable
+fn print_add_value(key: &String, value: &String, append: bool) {
+    match std::env::var(key) {
+        // If the variable exists append the value to it using ; on windows, and : on linux
+        Ok(current) => {
+            let sep = if cfg!(windows) {';'} else {':'};
+            let new_value = if append {
+                format!("{current}{sep}{value}")
+            } else {
+                format!("{value}{sep}{current}")
+            };
+            println!("SET: {}={}", key, new_value);
+        }
+        Err(_) => println!("SET: {}={}", key, value),
+    }
+}
+

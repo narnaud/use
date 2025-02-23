@@ -40,8 +40,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           7z a use-${{ matrix.target }}.zip `
-            LICENSE README.md ./shell/cmd/use.cmd `
-            ./target/${{ matrix.target }}/release/use_env.exe
+            LICENSE README.md ./shell/* `
+            ./target/${{ matrix.target }}/release/use.exe
       - name: Post Build | Checksums
         shell: bash
         run: for file in use-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done

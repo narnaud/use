@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/narnaud/use/compare/v0.1.2...v0.1.3) (2025-02-23)
+
+
+### Bug Fixes
+
+* Fix release github actions (again [#2](https://github.com/narnaud/use/issues/2)) ([c8e5215](https://github.com/narnaud/use/commit/c8e5215cde13f8117b9b46c1a3884c5e1415ab8f))
+
 ## [0.1.2](https://github.com/narnaud/use/compare/v0.1.1...v0.1.2) (2025-02-23)
 
 

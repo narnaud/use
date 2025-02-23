@@ -1,26 +1,10 @@
-name: Release
 on:
-  push:
-    branches:
-      - main
-permissions:
-  contents: write
-  pull-requests: write
+    push:
+      tags:
+        - v[0-9]+.*
 jobs:
-  release_please:
-    # Update release PR
-    name: Release Please
-    runs-on: ubuntu-latest
-    steps:
-      - uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: rust
   build_and_publish:
-    # Build and release binary
     name: Build release binaries for ${{ matrix.target }}
-    needs: release_please
-    if: ${{ needs.release_please.outputs.release_created == 'true' }}
     strategy:
       fail-fast: false
       matrix:

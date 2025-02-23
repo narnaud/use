@@ -16,7 +16,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: rust
-          target-branch:
   build_and_publish:
     # Build and release binary
     name: Build release binaries for ${{ matrix.target }}

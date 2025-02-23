@@ -2,17 +2,33 @@
 ::: Note: we can't use setlocal as we want to change the env variables
 
 :::============================================================================
-::: Call the use_env executable to get all the env variables
+::: CHeck if we have a direct call
 :::============================================================================
+if /i "%1"=="" (
+    goto direct_call
+)
+set arg=%1
+if /i "%arg:~0,1%"=="-" (
+	goto direct_call
+)
 
-for /f "delims=" %%a in ('use_env %*') do (
+:::============================================================================
+::: Call the use executable to get all the env variables
+:::============================================================================
+for /f "delims=" %%a in ('%~dp0\..\use %*') do (
     call :handle_line "%%a"
 )
 goto :eof
 
+:::============================================================================
+::: Direct call to the use executable
+:::============================================================================
+:direct_call
+%~dp0\..\use %*
+goto :eof
 
 :::============================================================================
-::: Handle all the different lines from the output of use_env
+::: Handle all the different lines from the output of use
 :::============================================================================
 :handle_line
 set var=%1

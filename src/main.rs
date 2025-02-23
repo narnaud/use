@@ -34,7 +34,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "C:\\example\\path\\to\\add\\to\\path",
             "C:\\example\\other\\path\\to\\add\\to\\path"
         ],
-        "go": "C:\\example\\path\\to\\go\\to",
+        "go": "C:\\example\\path\\to\\go\\to"
     },
     "msvc2022": {
         "display": "Microsoft Visual Studio 2022 - x64",
@@ -56,7 +56,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
         "path": [
             "C:\\Qt\\6.8.2\\msvc2019_64\\bin"
         ]
-    },
+    }
 }
 "#;
 

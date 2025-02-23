@@ -74,7 +74,7 @@ struct Environment {
 }
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(bin_name = "use", version, about="Command-line utility to setup environment", long_about = None)]
 struct Args {
     /// Name of the environment to use
     env_name: Option<String>,

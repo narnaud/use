@@ -22,7 +22,7 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
       - name: Build | Cargo
-        run: cargo build --release --target ${{ matrix.target }} --color=always
+        run: cargo build --release --locked --target ${{ matrix.target }} --color=always
       - name: Post Build | Package [Windows]
         if: matrix.os == 'windows-latest'
         run: |

@@ -1,10 +1,13 @@
 name: Build and Publish
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - main
 jobs:
   build_and_publish:
     name: Build release binaries for ${{ matrix.target }}
+    if: |
+      github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(main)')
     strategy:
       fail-fast: false
       matrix:
@@ -31,7 +34,7 @@ jobs:
       - name: Post Build | Checksums
         shell: bash
         run: for file in use-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
-      - name: Post Build | Upload artifact
+      - name: Post Build | Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}

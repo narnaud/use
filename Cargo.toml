@@ -1,5 +1,5 @@
 [package]
-name = "use_env"
+name = "use"
 version = "0.1.0"
 edition = "2021"
 

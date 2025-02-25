@@ -52,7 +52,7 @@ local function use_getparam(line)
 end
 
 local function use_setenv(param)
-    local command = string.format('2>nul ../use.exe %s', param)
+    local command = string.format('2>nul use-config %s', param)
     local f = io.popen(command)
     local result = {}
     if f then
@@ -92,7 +92,7 @@ local function use_filter(line)
 
     -- Check for any flags
     if param == "" or param:match("^-") then
-        os.execute("../use.exe " .. param)
+        os.execute("use-config " .. param)
         return "", false
     else
         return use_setenv(param), false
@@ -108,7 +108,7 @@ clink.onfilterinput(use_filter)
 -- Lists all known envs
 local function list_envs()
     local envs
-    local r = io.popen("2>nul ../use.exe --list")
+    local r = io.popen("2>nul use-config --list")
     envs = {}
     for line in r:lines() do
         table.insert(envs, line)

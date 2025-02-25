@@ -15,7 +15,7 @@ if /i "%arg:~0,1%"=="-" (
 :::============================================================================
 ::: Call the use executable to get all the env variables
 :::============================================================================
-for /f "delims=" %%a in ('%~dp0\..\use %*') do (
+for /f "delims=" %%a in ('use-config %*') do (
     call :handle_line "%%a"
 )
 goto :eof

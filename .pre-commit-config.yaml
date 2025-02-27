@@ -22,3 +22,4 @@ repos:
     rev: v2.2.6
     hooks:
       - id: codespell
+        args: ["--ignore-words", ".codespell-ignore.txt"]

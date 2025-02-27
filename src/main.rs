@@ -1,5 +1,4 @@
 use clap::Parser;
-use log::debug;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
@@ -106,13 +105,11 @@ fn main() {
         print!("Error {} does not exist", config_file);
         std::process::exit(1);
     }
-    debug!("Find config file: {}", config_file);
 
     let environments = read_config_file(config_file).unwrap_or_else(|e| {
         println!("Error reading {} file: {}", config_file, e);
         std::process::exit(1);
     });
-    debug!("Read config file");
 
     if args.list || args.env_name.is_none() {
         list_environments(&environments);
@@ -121,20 +118,14 @@ fn main() {
 
     let env_name = args.env_name.unwrap();
     let current_env = env_name.clone();
-    debug!("Use environment: {}", env_name);
 
     let env_names = list_all_envs_for(env_name, &environments);
-    debug!("Setup environments: {:?}", env_names);
-
     for env_name in env_names.iter().rev() {
         let env = environments.get(env_name).unwrap();
         print_environment(env);
     }
 
-    debug!("Final touches");
     finalize(&current_env, &environments);
-
-    debug!("Done");
 }
 
 /// Send the final information, mostly for updating the terminal title and prompt
@@ -165,7 +156,7 @@ fn read_config_file(
     Ok(config)
 }
 
-/// Function to list all environments in the config file
+/// List all environments in the config file
 fn list_environments(envs: &HashMap<String, Environment>) {
     // Get keys from configs map, sort then and print them
     let mut keys: Vec<_> = envs.keys().collect();

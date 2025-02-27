@@ -384,7 +384,6 @@ dependencies = [
  "clap",
  "dirs",
  "env_logger",
- "log",
  "serde",
  "serde_json",
 ]

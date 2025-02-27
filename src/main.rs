@@ -115,11 +115,12 @@ fn main() {
     debug!("Read config file");
 
     if args.list || args.env_name.is_none() {
-        list_environments(environments);
+        list_environments(&environments);
         std::process::exit(0);
     }
 
     let env_name = args.env_name.unwrap();
+    let current_env = env_name.clone();
     debug!("Use environment: {}", env_name);
 
     let env_names = list_all_envs_for(env_name, &environments);
@@ -128,6 +129,21 @@ fn main() {
     for env_name in env_names.iter().rev() {
         let env = environments.get(env_name).unwrap();
         print_environment(env);
+    }
+
+    debug!("Final touches");
+    finalize(&current_env, &environments);
+
+    debug!("Done");
+}
+
+/// Send the final information, mostly for updating the terminal title and prompt
+fn finalize(env_name: &str, envs: &HashMap<String, Environment>) {
+    println!("SET: USE_PROMPT={}", env_name);
+    if let Some(display) = &envs.get(env_name).unwrap().display {
+        println!("TITLE: {}", display);
+    } else {
+        println!("TITLE: {}", env_name);
     }
 }
 
@@ -150,7 +166,7 @@ fn read_config_file(
 }
 
 /// Function to list all environments in the config file
-fn list_environments(envs: HashMap<String, Environment>) {
+fn list_environments(envs: &HashMap<String, Environment>) {
     // Get keys from configs map, sort then and print them
     let mut keys: Vec<_> = envs.keys().collect();
     keys.sort();

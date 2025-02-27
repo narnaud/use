@@ -75,6 +75,9 @@ local function use_setenv(param)
             elseif line:sub(1, 7) == "DEFER: " then
                 local script = line:sub(8)
                 table.insert(result, "call \"" .. script .. "\" > NUL\n")
+            elseif line:sub(1, 7) == "TITLE: " then
+                local title = line:sub(8)
+                table.insert(result, "TITLE " .. title .. "\n")
             else
                 print(line)
             end

@@ -49,6 +49,10 @@ echo %1 | findstr /C:"GO:">nul && (
     cd "%var:~5,-1%"
     goto :end_handle_line
 )
+echo %1 | findstr /C:"TITLE:">nul && (
+    TITLE %var:~8,-1%
+    goto :end_handle_line
+)
 echo %var:~1,-1%
 :end_handle_line
 exit /b 0

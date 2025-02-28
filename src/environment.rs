@@ -115,7 +115,6 @@ pub fn use_environment(name: String, envs: &HashMap<String, Environment>) {
     }
 
     finalize_setup(&current, envs);
-
 }
 
 /// List all environment that should be used based on the environment name
@@ -207,9 +206,7 @@ fn print_add_value(key: &String, value: &String, append: bool) {
 /// Send the final information, mostly for updating the terminal title and prompt
 fn finalize_setup(name: &str, envs: &HashMap<String, Environment>) {
     println!("SET: USE_PROMPT={}", name);
-    let title = (envs.get(name).unwrap().display)
-        .as_deref()
-        .unwrap_or(name);
+    let title = (envs.get(name).unwrap().display).as_deref().unwrap_or(name);
     println!("TITLE: {}", title);
     println!("{} setting up {}", "    Finished".success(), title.info());
 }

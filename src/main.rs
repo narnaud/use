@@ -84,6 +84,60 @@ struct Args {
     #[clap(short, long)]
     create: bool,
 }
+trait Colorize {
+    fn warning(self) -> String;
+    fn error(self) -> String;
+    fn info(self) -> String;
+    fn success(self) -> String;
+    fn update(self) -> String;
+}
+
+impl Colorize for String {
+    fn warning(mut self) -> String{
+        self = "\x1b[1;33m".to_string() + &self + "\x1b[0m";
+        self
+    }
+    fn error(mut self) -> String{
+        self = "\x1b[1;31m".to_string() + &self + "\x1b[0m";
+        self
+    }
+    fn info(mut self) -> String{
+        self = "\x1b[0;34m".to_string() + &self + "\x1b[0m";
+        self
+    }
+    fn success(mut self) -> String{
+        self = "\x1b[1;32m".to_string() + &self + "\x1b[0m";
+        self
+    }
+    fn update(mut self) -> String{
+        self = "\x1b[1A\r".to_string() + &self;
+        self
+    }
+}
+
+impl Colorize for &str {
+    fn warning(self) -> String{
+        let result = self.to_string();
+        result.warning()
+    }
+    fn error(self) -> String{
+        let result = self.to_string();
+        result.error()
+    }
+    fn info(self) -> String{
+        let result = self.to_string();
+        result.info()
+    }
+    fn success(self) -> String{
+        let result = self.to_string();
+        result.success()
+    }
+    fn update(self) -> String{
+        let result = self.to_string();
+        result.update()
+    }
+}
+
 
 fn main() {
     env_logger::init();
@@ -96,18 +150,19 @@ fn main() {
 
     let args = Args::parse();
     if args.create {
+        println!("{} {} file", "    Creating".info(), config_file);
         create_config_file(config_file);
-        println!("Created {} file", config_file);
+        println!("{} {} file", "     Created".success().update(), config_file);
         std::process::exit(0);
     }
 
     if !config_file_path.exists() {
-        print!("Error {} does not exist", config_file);
+        print!("{} {} does not exist", "error:".error(), config_file);
         std::process::exit(1);
     }
 
     let environments = read_config_file(config_file).unwrap_or_else(|e| {
-        println!("Error reading {} file: {}", config_file, e);
+        println!("{} reading {} file: {}", "error:".error(), config_file, e);
         std::process::exit(1);
     });
 
@@ -131,11 +186,9 @@ fn main() {
 /// Send the final information, mostly for updating the terminal title and prompt
 fn finalize(env_name: &str, envs: &HashMap<String, Environment>) {
     println!("SET: USE_PROMPT={}", env_name);
-    if let Some(display) = &envs.get(env_name).unwrap().display {
-        println!("TITLE: {}", display);
-    } else {
-        println!("TITLE: {}", env_name);
-    }
+    let title = (envs.get(env_name).unwrap().display).as_deref().unwrap_or(env_name);
+    println!("TITLE: {}", title);
+    println!("{} setting up {}", "    Finished".success(), title.info());
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -167,7 +220,7 @@ fn list_environments(envs: &HashMap<String, Environment>) {
 /// List all environment that should be used based on the environment name
 fn list_all_envs_for(env_name: String, envs: &HashMap<String, Environment>) -> Vec<String> {
     if !envs.contains_key(env_name.as_str()) {
-        println!("Error: Environment {} not found", env_name);
+        println!("{} Environment {} not found", "warning:".warning(), env_name.info());
         std::process::exit(1);
     }
 
@@ -214,7 +267,7 @@ fn print_environment(env: &Environment) {
     };
 
     if let Some(display) = &env.display {
-        println!("Setting up {} environment", display);
+        println!("{} {}", " Configuring".info(), display);
     }
     print_vec("DEFER", &env.defer);
     print_set(&env.set);
@@ -223,6 +276,9 @@ fn print_environment(env: &Environment) {
     print_vec("PATH", &env.path);
     if let Some(go) = &env.go {
         println!("GO: {}", go);
+    }
+    if let Some(display) = &env.display {
+        println!("{} {}", "  Configured".success().update(), display);
     }
 }
 

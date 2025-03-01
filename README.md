@@ -14,6 +14,15 @@ As we can't change the console environment from a binary, use is using a dual st
 - a binary, `use-config`, to extract all the information for setting up the environment
 - a shell script to setup for a given shell, using the output of `use-config`
 
+## Installation
+
+Install **use** with [scoop](<https://scoop.sh/>):
+
+```
+scoop bucket add narnaud https://github.com/narnaud/scoop-bucket
+scoop install use
+```
+
 ## Usage
 
 To use **use**, you need to have `use-config` in the `PATH`, as well as your shell integration setup.

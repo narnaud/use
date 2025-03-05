@@ -22,8 +22,6 @@ struct Args {
 }
 
 fn main() {
-    env_logger::init();
-
     let mut config_file_path = dirs::home_dir().expect("Could not find home directory");
     config_file_path.push(CONFIG_FILE_NAME);
     let config_file = config_file_path

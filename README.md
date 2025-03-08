@@ -85,6 +85,51 @@ The json file is a map of environments, the key being used as the environment na
 - `defer`: call one or multiple scripts
 - `use`: reuse existing environment (they will be setup before)
 - `go`: go to a particular directory at the end of the setup
+- `pattern`: use pattern matching to create multiple environments with one definition (see below)
+
+### Pattern matching
+
+It is now possible to define multiple environments in a single definition. This is especially interesting if you have multiple versions of the same lib or app.
+
+For example, here is a definition for Qt on Windows:
+
+```json
+    "qt{}.{}.{}": {
+        "display": "Qt {}.{}.{} - MSVC - x64",
+        "pattern": {
+            "path": "C:\\Qt",
+            "regex": "(\\d+)\\.(\\d+)\\.(\\d+)"
+        },
+        "use": [
+            "msvc2022"
+        ],
+        "set": {
+            "QTDIR": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
+        },
+        "append": {
+            "CMAKE_PREFIX_PATH": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
+        },
+        "path": [
+            "C:\\Qt\\{}.{}.{}\\msvc2019_64\\bin"
+        ]
+    },
+```
+
+The interesting part is the `pattern` key:
+
+- `path`: gives the path to look at
+- `regex`: the regex to match files/dirs in the path
+
+So if I have installed for example Qt 5.12.2, Qt 6.5.3 and Qt 6.8.2, I should have those directories under C:\Qt:
+
+```cmd
+C:Qt
++- 5.12.2
++- 6.5.3
++- 6.8.2
+```
+
+And it will create 3 different environments: `qt5.12.2`, `qt6.5.3` and `qt6.8.2`.
 
 ## Shell integration
 

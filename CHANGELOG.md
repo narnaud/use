@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/narnaud/use/compare/v1.0.0...v1.1.0) (2025-03-08)
+
+
+### Features
+
+* Add pattern matching for environment ([c7ba523](https://github.com/narnaud/use/commit/c7ba523d97f4b9c76a0e489641fe3dd2cb2ad38c))
+
+
+### Bug Fixes
+
+* Remove unused dependency ([472b291](https://github.com/narnaud/use/commit/472b291dbd2cce3c2d9279ab619436d45e09c23c))
+
 ## [1.0.0](https://github.com/narnaud/use/compare/v0.1.0...v1.0.0) (2025-03-08)
 
 

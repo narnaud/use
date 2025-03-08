@@ -1,8 +1,10 @@
+use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Write;
+use std::path::PathBuf;
 
 use crate::colorize;
 use colorize::Colorize;
@@ -41,23 +43,36 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
             "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat"
         ]
     },
-    "qt6.8": {
-        "display": "Qt 6.8.2 - MSVC - x64",
+    "qt{}.{}.{}": {
+        "display": "Qt {}.{}.{} - MSVC - x64",
+        "pattern": {
+            "path": "C:\\Qt",
+            "regex": "(\\d+)\\.(\\d+)\\.(\\d+)"
+        },
         "use": [
             "msvc2022"
         ],
         "set": {
-            "QTDIR": "C:\\Qt\\6.8.2\\msvc2019_64\\"
+            "QTDIR": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
         },
         "append": {
-            "CMAKE_PREFIX_PATH": "C:\\Qt\\6.8.2\\msvc2019_64\\"
+            "CMAKE_PREFIX_PATH": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
         },
         "path": [
-            "C:\\Qt\\6.8.2\\msvc2019_64\\bin"
+            "C:\\Qt\\{}.{}.{}\\msvc2019_64\\bin"
         ]
-    }
+    },
 }
 "#;
+
+/// Struct to hold the pattern of the environment
+///
+/// This is used to create multiple environments based on a pattern
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Pattern {
+    path: String,
+    regex: String,
+}
 
 /// Struct to hold the environment configuration
 ///
@@ -65,6 +80,7 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Environment {
     display: Option<String>,
+    pattern: Option<Pattern>,
     defer: Option<Vec<String>>,
     set: Option<HashMap<String, String>>,
     append: Option<HashMap<String, String>>,
@@ -90,7 +106,21 @@ pub fn read_config_file(
 ) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
-    let config = serde_json::from_reader(reader)?;
+    let mut config: HashMap<String, Environment> = serde_json::from_reader(reader)?;
+
+    // Create environments based on patterns
+    let pattern_configs: HashMap<String, Environment> = config
+        .iter()
+        .filter_map(|(name, env)| {
+            env.pattern
+                .as_ref()
+                .map(|_| create_pattern_config(name, env))
+        })
+        .flatten()
+        .collect();
+    config.retain(|_, env| env.pattern.is_none());
+    config.extend(pattern_configs);
+
     Ok(config)
 }
 
@@ -209,4 +239,77 @@ fn finalize_setup(name: &str, envs: &HashMap<String, Environment>) {
     let title = (envs.get(name).unwrap().display).as_deref().unwrap_or(name);
     println!("TITLE: {}", title);
     println!("{} setting up {}", "    Finished".success(), title.info());
+}
+
+/// If the environment has a pattern, create a new environment for each matches
+pub fn create_pattern_config(key: &String, env: &Environment) -> HashMap<String, Environment> {
+    let mut pattern_config = HashMap::new();
+    let pattern = &env.pattern.as_ref().unwrap();
+
+    let path = PathBuf::from(&pattern.path);
+    if !path.exists() || !path.is_dir() {
+        println!(
+            "{}({}): {} is not a valid directory",
+            "warning".warning(),
+            key,
+            pattern.path
+        );
+        return pattern_config;
+    }
+
+    // get all files or dirs in the pattern path
+    let entries = path
+        .read_dir()
+        .expect("Could not read directory")
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .map(|entry| entry.to_string());
+
+    let re = match Regex::new(&pattern.regex) {
+        Ok(re) => re,
+        Err(e) => {
+            println!("{}({}): {}", "error".error(), key, e);
+            std::process::exit(1);
+        }
+    };
+    for entry in entries.filter(|e| re.is_match(e)) {
+        let captures = re.captures(&entry).unwrap();
+        let mut new_env = env.clone();
+        let mut new_key = key.clone();
+        for capture in captures.iter().skip(1).flatten() {
+            let capture = capture.as_str();
+            replace_in_env(&mut new_env, capture);
+            new_key = new_key.replacen("{}", capture, 1);
+        }
+        new_env.pattern = None;
+        pattern_config.insert(new_key, new_env);
+    }
+
+    pattern_config
+}
+
+/// Replace a {} in the environment with a value
+fn replace_in_env(env: &mut Environment, value: &str) {
+    let replace_in_string =
+        |string: &Option<String>| string.as_ref().map(|s| s.replacen("{}", value, 1));
+    let replace_in_vec = |vec: &Option<Vec<String>>| {
+        vec.as_ref()
+            .map(|v| v.iter().map(|item| item.replacen("{}", value, 1)).collect())
+    };
+
+    let replace_in_map = |map: &Option<HashMap<String, String>>| {
+        map.as_ref().map(|m| {
+            m.iter()
+                .map(|(k, v)| (k.clone(), v.replacen("{}", value, 1)))
+                .collect()
+        })
+    };
+
+    env.display = replace_in_string(&env.display);
+    env.go = replace_in_string(&env.go);
+    env.defer = replace_in_vec(&env.defer);
+    env.set = replace_in_map(&env.set);
+    env.append = replace_in_map(&env.append);
+    env.prepend = replace_in_map(&env.prepend);
+    env.path = replace_in_vec(&env.path);
 }

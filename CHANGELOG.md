@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/narnaud/use/compare/v1.1.0...v1.2.0) (2025-03-14)
+
+
+### Features
+
+* Add a new settings to change the terminal title or not ([7b90086](https://github.com/narnaud/use/commit/7b90086d7fc723b5679c232cff5326a9f4f82d56))
+
+
+### Bug Fixes
+
+* **clink:** Use console.settitle instead of collaing TITLE... ([73f7236](https://github.com/narnaud/use/commit/73f7236074e387e15c2c1b6313ebb032be21a814))
+
 ## [1.1.0](https://github.com/narnaud/use/compare/v1.0.0...v1.1.0) (2025-03-08)
 
 

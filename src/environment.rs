@@ -1,3 +1,4 @@
+use preferences::{AppInfo, Preferences, PreferencesMap};
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -9,6 +10,40 @@ use std::path::PathBuf;
 use crate::colorize;
 use colorize::Colorize;
 
+/******************************************************************************
+ * Preferences
+ *****************************************************************************/
+const APP_INFO: AppInfo = AppInfo {
+    name: "use",
+    author: "narnaud",
+};
+const UPDATE_TITLE: &str = "update-title";
+
+/// Get the preferences map
+fn get_prefs() -> PreferencesMap<String> {
+    PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
+}
+/// Save the preferences map
+fn save_prefs(prefs: &PreferencesMap<String>) {
+    let save_result = prefs.save(&APP_INFO, env!("CARGO_PKG_NAME"));
+    assert!(save_result.is_ok());
+}
+
+/// Store the update title preference.
+pub fn set_update_title(enabled: bool) {
+    let mut prefs = get_prefs();
+    prefs.insert(UPDATE_TITLE.into(), enabled.to_string());
+    save_prefs(&prefs);
+}
+
+/// Get the update title preference.
+pub fn get_update_title() -> bool {
+    let prefs = get_prefs();
+    prefs.get(UPDATE_TITLE).map(|s| s == "true").unwrap_or(true)
+}
+/******************************************************************************
+ * Environment handling
+ *****************************************************************************/
 static CONFIG_FILE_EXAMPLE: &str = r#"
 {
     "example": {
@@ -237,7 +272,9 @@ fn print_add_value(key: &String, value: &String, append: bool) {
 fn finalize_setup(name: &str, envs: &HashMap<String, Environment>) {
     println!("SET: USE_PROMPT={}", name);
     let title = (envs.get(name).unwrap().display).as_deref().unwrap_or(name);
-    println!("TITLE: {}", title);
+    if get_update_title() {
+        println!("TITLE: {}", title);
+    }
     println!("{} setting up {}", "    Finished".success(), title.info());
 }
 

@@ -77,7 +77,7 @@ local function use_setenv(param)
                 table.insert(result, "call \"" .. script .. "\" > NUL\n")
             elseif line:sub(1, 7) == "TITLE: " then
                 local title = line:sub(8)
-                table.insert(result, "TITLE " .. title .. "\n")
+                console.settitle(title)
             else
                 print(line)
             end

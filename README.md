@@ -28,7 +28,13 @@ scoop install use
 To use **use**, you need to have `use-config` in the `PATH`, as well as your shell integration setup.
 
 ```
-Usage: use [OPTIONS] [NAME]
+Command-line utility to setup environment
+
+Usage: use [OPTIONS] [NAME] [COMMAND]
+
+Commands:
+  set   Adjust use's settings
+  help  Print this message or the help of the given subcommand(s)
 
 Arguments:
   [NAME]  Name of the environment to use
@@ -134,6 +140,16 @@ And it will create 3 different environments: `qt5.12.2`, `qt6.5.3` and `qt6.8.2`
 ## Shell integration
 
 All shell integrations expect `use-config` to be accessible in the `PATH`.
+
+### Changing the terminal title
+
+By default, **use** is going to change the terminal title using the environment name. You are free to change the settings:
+
+```batch
+use set --update-title false
+```
+
+Set it to `true` to go back to the default behavior.
 
 ### Cmd (Windows)
 

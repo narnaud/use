@@ -8,7 +8,7 @@ use environment::*;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.json";
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(bin_name = "use", version, about="Command-line utility to setup environment", long_about = None)]
 struct Args {
     /// Name of the environment to use
@@ -19,6 +19,18 @@ struct Args {
     /// Create a new config file
     #[clap(short, long)]
     create: bool,
+    #[clap(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Parser)]
+enum Command {
+    /// Adjust use's settings
+    Set {
+        /// Change the terminal title based on the environment chosen
+        #[clap(long = "update-title")]
+        update_title: Option<bool>,
+    },
 }
 
 fn main() {
@@ -31,6 +43,13 @@ fn main() {
     let args = Args::parse();
     if args.create {
         create_config_file(config_file);
+        std::process::exit(0);
+    }
+
+    if let Some(Command::Set { update_title }) = args.command {
+        if let Some(update_title) = update_title {
+            set_update_title(update_title);
+        }
         std::process::exit(0);
     }
 

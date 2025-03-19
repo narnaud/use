@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/narnaud/use/compare/v0.1.0...v0.2.0) (2025-03-19)
+
+
+### Features
+
+* Add some coloring and better console output ([61ed79a](https://github.com/narnaud/use/commit/61ed79af97da383184a2a4112b8aea4788671cdc))
+* Add the final information ([9e1cafa](https://github.com/narnaud/use/commit/9e1cafa091bb912c8c8375ed05bde6abd1ee7a1d))
+* **clink:** Add clink completion script ([976784e](https://github.com/narnaud/use/commit/976784e93e073a19f6945b2116a3fea1866c61d7))
+* **clink:** Add clink integration ([bb831d5](https://github.com/narnaud/use/commit/bb831d57112117379e6d40270e3f2d412ad1ab55))
+* **clink:** Set the terminal title ([ec4a047](https://github.com/narnaud/use/commit/ec4a047dde79f17359fcdbcda9ebb44881466b45))
+* **cmd:** Set the terminal title ([73315bb](https://github.com/narnaud/use/commit/73315bbca1faeb4e8f8e147b5f03893d1c65be19))
+
+
+### Bug Fixes
+
+* Fix example config file json ([1bd7fe7](https://github.com/narnaud/use/commit/1bd7fe7b4df12803940c9277a05e8f28f17a9663))
+
 ## 0.1.0 (2025-03-19)
 
 

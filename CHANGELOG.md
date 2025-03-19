@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/narnaud/use/compare/v0.2.0...v0.3.0) (2025-03-19)
+
+
+### Features
+
+* Add a new settings to change the terminal title or not ([1690486](https://github.com/narnaud/use/commit/1690486b20d0f702ea0be79f7e416ee0c36311a8))
+* Add pattern matching for environment ([428a596](https://github.com/narnaud/use/commit/428a596db003d7c83ff001a26302ce1782a8bec2))
+
+
+### Bug Fixes
+
+* **clink:** Use console.settitle instead of collaing TITLE... ([32c95ab](https://github.com/narnaud/use/commit/32c95ab094f51b36a7a05ab0131fbcd3bfba2a19))
+* Remove unused dependency ([fa6bff4](https://github.com/narnaud/use/commit/fa6bff427d523e0bc5672a91efcadd6bcbca5c12))
+
 ## [0.2.0](https://github.com/narnaud/use/compare/v0.1.0...v0.2.0) (2025-03-19)
 
 

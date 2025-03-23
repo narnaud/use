@@ -169,11 +169,21 @@ The integration is done by loading a lua script. Add the `<use>/clink` directory
 clink installscripts C:\path\to\<use>\clink
 ```
 
-The clink integration also have completion by default (you should really use clink!).
+The clink integration has completion (you should really use clink!).
+
+### Powershell
+
+The integration is done via a powershell module, name `use`. Make sure the module is available from the `PSModulePath`, then import it in your powershell profile:
+
+```pwsh
+Import-Module posh-use
+```
+
+The powershell integration has completion.
 
 ### Writing your own integration script
 
-It should be fairly easy to integrate with other shells (copntribution are very welcome). The output of `use-config` will be something like that:
+It should be fairly easy to integrate with other shells (contributions are very welcome). The output of `use-config` will be something like that:
 
 ```
 ❯ use-config.exe knut
@@ -194,6 +204,7 @@ The parsing is quite easy:
 
 - `DEFER: script`: run the script `script`
 - `SET: var=value`: set the environment variable `var` to `value`
+- `PATH: path`: prepend a path to the `PATH` environment variable
 - `GO: path`: go to the directory `path`
 - `TITLE: string`: change the console tab title to `string`
 - All other lines should be displayed as is.

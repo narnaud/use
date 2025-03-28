@@ -64,7 +64,8 @@ fn main() {
     });
 
     if args.list || args.name.is_none() {
-        list_environments(&environments);
+        let keys = list_environments(&environments);
+        keys.iter().for_each(|key| println!("{}", key));
         std::process::exit(0);
     }
 

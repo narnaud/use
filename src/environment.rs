@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 use crate::colorize;
 use colorize::Colorize;
+use semver::Version;
 
 /******************************************************************************
  * Preferences
@@ -124,6 +125,10 @@ pub struct Environment {
     #[serde(rename = "use")]
     reuse: Option<Vec<String>>,
     go: Option<String>,
+
+    #[serde(skip)]
+    version: Option<String>,
+    original_key: Option<String>,
 }
 
 /// Create a config file in the home directory if it does not exist
@@ -160,11 +165,28 @@ pub fn read_config_file(
 }
 
 /// List all environments in the config file
-pub fn list_environments(envs: &HashMap<String, Environment>) {
-    // Get keys from configs map, sort then and print them
+pub fn list_environments(envs: &HashMap<String, Environment>) -> Vec<&String> {
+    // Get keys from configs map, sort then by name and versions
     let mut keys: Vec<_> = envs.keys().collect();
-    keys.sort();
-    keys.iter().for_each(|key| println!("{}", key));
+    keys.sort_by(|a, b| {
+        let env_a = envs.get(*a).unwrap();
+        let env_b = envs.get(*b).unwrap();
+
+        // If both have the same original key, compare by version
+        if let (Some(key_a), Some(key_b)) = (&env_a.original_key, &env_b.original_key) {
+            if key_a == key_b {
+                // Parse and compare versions
+                if let (Some(ver_a), Some(ver_b)) = (&env_a.version, &env_b.version) {
+                    if let (Ok(v_a), Ok(v_b)) = (Version::parse(ver_a), Version::parse(ver_b)) {
+                        return v_b.cmp(&v_a); // Sort newer versions first
+                    }
+                }
+            }
+        }
+        // Default lexicographical sort
+        a.cmp(b)
+    });
+    keys
 }
 
 /// Use the environment by printing the configuration to the console
@@ -173,18 +195,36 @@ pub fn list_environments(envs: &HashMap<String, Environment>) {
 /// based on the environment name
 pub fn use_environment(name: String, envs: &HashMap<String, Environment>) {
     let current = name.clone();
-    let names = list_all_envs_for(name, envs);
+    let keys = list_environments(envs);
+    let names = list_all_envs_for(name, keys.as_ref(), envs);
     for name in names.iter().rev() {
         let env = envs.get(name).unwrap();
         print_environment(env);
     }
 
-    finalize_setup(&current, envs);
+    finalize_setup(names.first().unwrap_or(&current), envs);
+}
+
+// Helper function to find an environment in the list of keys
+fn find_environment_key<'a>(name: &str, keys: &Vec<&'a String>) -> Option<&'a String> {
+    // First try exact match
+    if let Some(&key) = keys.iter().find(|&&k| k == name) {
+        return Some(key);
+    }
+
+    // Then try prefix match
+    keys.iter().find(|&&k| k.starts_with(name)).copied()
 }
 
 /// List all environment that should be used based on the environment name
-fn list_all_envs_for(name: String, envs: &HashMap<String, Environment>) -> Vec<String> {
-    if !envs.contains_key(name.as_str()) {
+fn list_all_envs_for(
+    name: String,
+    keys: &Vec<&String>,
+    envs: &HashMap<String, Environment>,
+) -> Vec<String> {
+    let real_name = find_environment_key(name.as_str(), keys);
+
+    if real_name.is_none() {
         println!(
             "{} Environment {} not found",
             "warning:".warning(),
@@ -192,13 +232,14 @@ fn list_all_envs_for(name: String, envs: &HashMap<String, Environment>) -> Vec<S
         );
         std::process::exit(1);
     }
+    let name = real_name.unwrap();
 
     let mut names = vec![name.clone()];
     let env = envs.get(name.as_str()).unwrap();
 
     if let Some(reuse) = env.reuse.as_ref() {
         for env_name in reuse.iter() {
-            let reuse_env_names = list_all_envs_for(env_name.clone(), envs)
+            let reuse_env_names = list_all_envs_for(env_name.clone(), keys, envs)
                 .into_iter()
                 .filter(|name| !names.contains(name))
                 .collect::<Vec<String>>();
@@ -318,6 +359,8 @@ pub fn create_pattern_config(key: &String, env: &Environment) -> HashMap<String,
             replace_in_env(&mut new_env, capture);
             new_key = new_key.replacen("{}", capture, 1);
         }
+        new_env.version = Some(captures.get(1).unwrap().as_str().to_string());
+        new_env.original_key = Some(key.clone());
         new_env.pattern = None;
         pattern_config.insert(new_key, new_env);
     }

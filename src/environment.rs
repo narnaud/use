@@ -2,9 +2,8 @@ use preferences::{AppInfo, Preferences, PreferencesMap};
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Write;
+use std::fs;
+use std::io::{BufReader, Write};
 use std::path::PathBuf;
 
 use crate::colorize;
@@ -12,39 +11,14 @@ use colorize::Colorize;
 use semver::Version;
 
 /******************************************************************************
- * Preferences
+ * Constants
  *****************************************************************************/
 const APP_INFO: AppInfo = AppInfo {
     name: "use",
     author: "narnaud",
 };
-const UPDATE_TITLE: &str = "update-title";
+const UPDATE_TITLE_KEY: &str = "update-title";
 
-/// Get the preferences map
-fn get_prefs() -> PreferencesMap<String> {
-    PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
-}
-/// Save the preferences map
-fn save_prefs(prefs: &PreferencesMap<String>) {
-    let save_result = prefs.save(&APP_INFO, env!("CARGO_PKG_NAME"));
-    assert!(save_result.is_ok());
-}
-
-/// Store the update title preference.
-pub fn set_update_title(enabled: bool) {
-    let mut prefs = get_prefs();
-    prefs.insert(UPDATE_TITLE.into(), enabled.to_string());
-    save_prefs(&prefs);
-}
-
-/// Get the update title preference.
-pub fn get_update_title() -> bool {
-    let prefs = get_prefs();
-    prefs.get(UPDATE_TITLE).map(|s| s == "true").unwrap_or(true)
-}
-/******************************************************************************
- * Environment handling
- *****************************************************************************/
 static CONFIG_FILE_EXAMPLE: &str = r#"
 {
     "example": {
@@ -101,9 +75,43 @@ static CONFIG_FILE_EXAMPLE: &str = r#"
 }
 "#;
 
+/******************************************************************************
+ * Preferences Management
+ *****************************************************************************/
+mod prefs {
+    use super::*;
+
+    /// Get the preferences map
+    fn load() -> PreferencesMap<String> {
+        PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
+    }
+
+    /// Save the preferences map
+    fn save(prefs: &PreferencesMap<String>) {
+        prefs
+            .save(&APP_INFO, env!("CARGO_PKG_NAME"))
+            .expect("Failed to save preferences");
+    }
+
+    /// Store the update title preference.
+    pub fn set_update_title(enabled: bool) {
+        let mut prefs = load();
+        prefs.insert(UPDATE_TITLE_KEY.into(), enabled.to_string());
+        save(&prefs);
+    }
+
+    /// Get the update title preference.
+    pub fn get_update_title() -> bool {
+        load().get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true")
+    }
+}
+
+pub use prefs::{get_update_title, set_update_title};
+
+/******************************************************************************
+ * Data Structures
+ *****************************************************************************/
 /// Struct to hold the pattern of the environment
-///
-/// This is used to create multiple environments based on a pattern
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Pattern {
     path: String,
@@ -111,8 +119,6 @@ pub struct Pattern {
 }
 
 /// Struct to hold the environment configuration
-///
-/// This matches the structure of the JSON config file
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Environment {
     display: Option<String>,
@@ -131,6 +137,37 @@ pub struct Environment {
     original_key: Option<String>,
 }
 
+impl Environment {
+    fn replace_placeholders(&mut self, value: &str) {
+        let replace = |s: &mut Option<String>| {
+            *s = s.as_ref().map(|v| v.replacen("{}", value, 1));
+        };
+        let replace_vec = |v: &mut Option<Vec<String>>| {
+            *v = v
+                .as_ref()
+                .map(|items| items.iter().map(|i| i.replacen("{}", value, 1)).collect());
+        };
+        let replace_map = |m: &mut Option<HashMap<String, String>>| {
+            *m = m.as_ref().map(|map| {
+                map.iter()
+                    .map(|(k, v)| (k.clone(), v.replacen("{}", value, 1)))
+                    .collect()
+            });
+        };
+
+        replace(&mut self.display);
+        replace(&mut self.go);
+        replace_vec(&mut self.defer);
+        replace_map(&mut self.set);
+        replace_map(&mut self.append);
+        replace_map(&mut self.prepend);
+        replace_vec(&mut self.path);
+    }
+}
+
+/******************************************************************************
+ * Config File Handling
+ *****************************************************************************/
 /// Create a config file in the home directory if it does not exist
 pub fn create_config_file(path: &str) {
     println!("{} {} file", "    Creating".info(), path);
@@ -144,11 +181,10 @@ pub fn create_config_file(path: &str) {
 pub fn read_config_file(
     file_path: &str,
 ) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
-    let file = File::open(file_path)?;
-    let reader = BufReader::new(file);
+    let reader = BufReader::new(fs::File::open(file_path)?);
     let mut config: HashMap<String, Environment> = serde_json::from_reader(reader)?;
 
-    // Create environments based on patterns
+    // Process pattern-based environments
     let pattern_configs: HashMap<String, Environment> = config
         .iter()
         .filter_map(|(name, env)| {
@@ -158,146 +194,131 @@ pub fn read_config_file(
         })
         .flatten()
         .collect();
+
     config.retain(|_, env| env.pattern.is_none());
     config.extend(pattern_configs);
 
     Ok(config)
 }
 
+/******************************************************************************
+ * Environment Management
+ *****************************************************************************/
 /// List all environments in the config file
 pub fn list_environments(envs: &HashMap<String, Environment>) -> Vec<&String> {
-    // Get keys from configs map, sort then by name and versions
     let mut keys: Vec<_> = envs.keys().collect();
     keys.sort_by(|a, b| {
-        let env_a = envs.get(*a).unwrap();
-        let env_b = envs.get(*b).unwrap();
+        let env_a = &envs[*a];
+        let env_b = &envs[*b];
 
-        // If both have the same original key, compare by version
+        // Sort by version if environments have the same original key
         if let (Some(key_a), Some(key_b)) = (&env_a.original_key, &env_b.original_key) {
             if key_a == key_b {
-                // Parse and compare versions
                 if let (Some(ver_a), Some(ver_b)) = (&env_a.version, &env_b.version) {
                     if let (Ok(v_a), Ok(v_b)) = (Version::parse(ver_a), Version::parse(ver_b)) {
-                        return v_b.cmp(&v_a); // Sort newer versions first
+                        return v_b.cmp(&v_a); // Newer versions first
                     }
                 }
             }
         }
-        // Default lexicographical sort
-        a.cmp(b)
+        a.cmp(b) // Default lexicographical sort
     });
     keys
 }
 
 /// Use the environment by printing the configuration to the console
-///
-/// This function will recursively call itself to print all environments that should be used
-/// based on the environment name
 pub fn use_environment(name: String, envs: &HashMap<String, Environment>) {
-    let current = name.clone();
     let keys = list_environments(envs);
-    let names = list_all_envs_for(name, keys.as_ref(), envs);
+    let names = resolve_dependencies(name, keys.as_ref(), envs);
+
+    // Print environments in reverse order
     for name in names.iter().rev() {
-        let env = envs.get(name).unwrap();
-        print_environment(env);
+        print_environment(&envs[name]);
     }
 
-    finalize_setup(names.first().unwrap_or(&current), envs);
+    finalize_setup(names.first().unwrap(), envs);
 }
 
-// Helper function to find an environment in the list of keys
-fn find_environment_key<'a>(name: &str, keys: &Vec<&'a String>) -> Option<&'a String> {
-    // First try exact match
-    if let Some(&key) = keys.iter().find(|&&k| k == name) {
-        return Some(key);
-    }
-
-    // Then try prefix match
-    keys.iter().find(|&&k| k.starts_with(name)).copied()
-}
-
-/// List all environment that should be used based on the environment name
-fn list_all_envs_for(
+fn resolve_dependencies(
     name: String,
-    keys: &Vec<&String>,
+    keys: &[&String],
     envs: &HashMap<String, Environment>,
 ) -> Vec<String> {
-    let real_name = find_environment_key(name.as_str(), keys);
-
-    if real_name.is_none() {
+    let name = find_environment_key(&name, keys).unwrap_or_else(|| {
         println!(
             "{} Environment {} not found",
             "warning:".warning(),
             name.info()
         );
         std::process::exit(1);
-    }
-    let name = real_name.unwrap();
+    });
 
     let mut names = vec![name.clone()];
-    let env = envs.get(name.as_str()).unwrap();
-
-    if let Some(reuse) = env.reuse.as_ref() {
-        for env_name in reuse.iter() {
-            let reuse_env_names = list_all_envs_for(env_name.clone(), keys, envs)
+    if let Some(reuse) = &envs[name].reuse {
+        for env_name in reuse {
+            let deps = resolve_dependencies(env_name.clone(), keys, envs)
                 .into_iter()
-                .filter(|name| !names.contains(name))
+                .filter(|n| !names.contains(n))
                 .collect::<Vec<String>>();
-            names.extend(reuse_env_names);
+            names.extend(deps);
         }
     }
-
     names
 }
 
-/// Print the environment to the console
+fn find_environment_key<'a>(name: &str, keys: &[&'a String]) -> Option<&'a String> {
+    keys.iter()
+        .find(|&&k| k == name || k.starts_with(name))
+        .copied()
+}
+
 fn print_environment(env: &Environment) {
-    let print_vec = |label: &str, vec: &Option<Vec<String>>| {
-        if let Some(vec) = vec {
-            for item in vec {
-                println!("{}: {}", label, item);
-            }
-        }
-    };
-
-    let print_set = |map: &Option<HashMap<String, String>>| {
-        if let Some(map) = map {
-            for (key, value) in map {
-                println!("SET: {}={}", key, value);
-            }
-        }
-    };
-
-    let print_add = |map: &Option<HashMap<String, String>>, append: bool| {
-        if let Some(map) = map {
-            for (key, value) in map {
-                print_add_value(key, value, append);
-            }
-        }
-    };
-
     if let Some(display) = &env.display {
         println!("{} {}", " Configuring".info(), display);
     }
-    print_vec("DEFER", &env.defer);
+    print_vector("DEFER", &env.defer);
     print_set(&env.set);
     print_add(&env.append, true);
     print_add(&env.prepend, false);
-    print_vec("PATH", &env.path);
+    print_vector("PATH", &env.path);
     if let Some(go) = &env.go {
         println!("GO: {}", go);
     }
     if let Some(display) = &env.display {
-        println!("{} {}", "  Configured".success().update(), display);
+        println!("{} {}", "  Configured".success(), display);
+    }
+}
+
+fn print_vector(label: &str, vec: &Option<Vec<String>>) {
+    if let Some(vec) = vec {
+        for item in vec {
+            println!("{}: {}", label, item);
+        }
+    }
+}
+
+fn print_set(map: &Option<HashMap<String, String>>) {
+    if let Some(map) = map {
+        for (key, value) in map {
+            println!("SET: {}={}", key, value);
+        }
+    }
+}
+
+fn print_add(map: &Option<HashMap<String, String>>, append: bool) {
+    if let Some(map) = map {
+        for (key, value) in map {
+            print_add_value(key, value, append);
+        }
     }
 }
 
 /// Append or prepend a value to an environment variable
-fn print_add_value(key: &String, value: &String, append: bool) {
+fn print_add_value(key: &str, value: &str, append: bool) {
+    let sep = if cfg!(windows) { ';' } else { ':' };
+
     match std::env::var(key) {
-        // If the variable exists append the value to it using ; on windows, and : on linux
         Ok(current) => {
-            let sep = if cfg!(windows) { ';' } else { ':' };
             let new_value = if append {
                 format!("{current}{sep}{value}")
             } else {
@@ -309,23 +330,30 @@ fn print_add_value(key: &String, value: &String, append: bool) {
     }
 }
 
-/// Send the final information, mostly for updating the terminal title and prompt
+/// Send the final setup information
 fn finalize_setup(name: &str, envs: &HashMap<String, Environment>) {
     println!("SET: USE_PROMPT={}", name);
-    let title = (envs.get(name).unwrap().display).as_deref().unwrap_or(name);
+    let title = envs[name].display.as_deref().unwrap_or(name);
+
     if get_update_title() {
         println!("TITLE: {}", title);
     }
+
     println!("{} setting up {}", "    Finished".success(), title.info());
 }
 
-/// If the environment has a pattern, create a new environment for each matches
-pub fn create_pattern_config(key: &String, env: &Environment) -> HashMap<String, Environment> {
+/******************************************************************************
+ * Pattern Matching
+ *****************************************************************************/
+pub fn create_pattern_config(key: &str, env: &Environment) -> HashMap<String, Environment> {
     let mut pattern_config = HashMap::new();
-    let pattern = &env.pattern.as_ref().unwrap();
+    let pattern = match &env.pattern {
+        Some(p) => p,
+        None => return pattern_config,
+    };
 
     let path = PathBuf::from(&pattern.path);
-    if !path.exists() || !path.is_dir() {
+    if !path.is_dir() {
         println!(
             "{}({}): {} is not a valid directory",
             "warning".warning(),
@@ -335,61 +363,34 @@ pub fn create_pattern_config(key: &String, env: &Environment) -> HashMap<String,
         return pattern_config;
     }
 
-    // get all files or dirs in the pattern path
-    let entries = path
-        .read_dir()
-        .expect("Could not read directory")
-        .filter_map(|entry| entry.ok())
-        .filter_map(|entry| entry.file_name().into_string().ok())
-        .map(|entry| entry.to_string());
+    let re = Regex::new(&pattern.regex).unwrap_or_else(|e| {
+        println!("{}({}): {}", "error".error(), key, e);
+        std::process::exit(1);
+    });
 
-    let re = match Regex::new(&pattern.regex) {
-        Ok(re) => re,
-        Err(e) => {
-            println!("{}({}): {}", "error".error(), key, e);
-            std::process::exit(1);
+    for entry in fs::read_dir(path)
+        .expect("Could not read directory")
+        .flatten()
+    {
+        if let Ok(name) = entry.file_name().into_string() {
+            if let Some(captures) = re.captures(&name) {
+                let mut new_env = env.clone();
+                let mut new_key = key.to_string();
+
+                for capture in captures.iter().skip(1).flatten() {
+                    let value = capture.as_str();
+                    new_env.replace_placeholders(value);
+                    new_key = new_key.replacen("{}", value, 1);
+                }
+
+                new_env.version = captures.get(1).map(|m| m.as_str().to_string());
+                new_env.original_key = Some(key.to_string());
+                new_env.pattern = None;
+
+                pattern_config.insert(new_key, new_env);
+            }
         }
-    };
-    for entry in entries.filter(|e| re.is_match(e)) {
-        let captures = re.captures(&entry).unwrap();
-        let mut new_env = env.clone();
-        let mut new_key = key.clone();
-        for capture in captures.iter().skip(1).flatten() {
-            let capture = capture.as_str();
-            replace_in_env(&mut new_env, capture);
-            new_key = new_key.replacen("{}", capture, 1);
-        }
-        new_env.version = Some(captures.get(1).unwrap().as_str().to_string());
-        new_env.original_key = Some(key.clone());
-        new_env.pattern = None;
-        pattern_config.insert(new_key, new_env);
     }
 
     pattern_config
-}
-
-/// Replace a {} in the environment with a value
-fn replace_in_env(env: &mut Environment, value: &str) {
-    let replace_in_string =
-        |string: &Option<String>| string.as_ref().map(|s| s.replacen("{}", value, 1));
-    let replace_in_vec = |vec: &Option<Vec<String>>| {
-        vec.as_ref()
-            .map(|v| v.iter().map(|item| item.replacen("{}", value, 1)).collect())
-    };
-
-    let replace_in_map = |map: &Option<HashMap<String, String>>| {
-        map.as_ref().map(|m| {
-            m.iter()
-                .map(|(k, v)| (k.clone(), v.replacen("{}", value, 1)))
-                .collect()
-        })
-    };
-
-    env.display = replace_in_string(&env.display);
-    env.go = replace_in_string(&env.go);
-    env.defer = replace_in_vec(&env.defer);
-    env.set = replace_in_map(&env.set);
-    env.append = replace_in_map(&env.append);
-    env.prepend = replace_in_map(&env.prepend);
-    env.path = replace_in_vec(&env.path);
 }

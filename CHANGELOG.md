@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/narnaud/use/compare/v0.2.0...v0.3.0) (2025-03-29)
+
+
+### Features
+
+* Add a new settings to change the terminal title or not ([1690486](https://github.com/narnaud/use/commit/1690486b20d0f702ea0be79f7e416ee0c36311a8))
+* Add pattern matching for environment ([428a596](https://github.com/narnaud/use/commit/428a596db003d7c83ff001a26302ce1782a8bec2))
+* Move to YAML for the config file ([f9a8e7e](https://github.com/narnaud/use/commit/f9a8e7ec30c930d579bd15dc65abca61717cf546))
+* **posh:** Add Powershell integration via a module ([c62ec9e](https://github.com/narnaud/use/commit/c62ec9ee27e430c86147eecc7f98b6711a444079))
+* Use partial keys for environment ([367b101](https://github.com/narnaud/use/commit/367b101e90ddcc0691455d3421e411ad936d987d))
+
+
+### Bug Fixes
+
+* **clink:** Use console.settitle instead of collaing TITLE... ([32c95ab](https://github.com/narnaud/use/commit/32c95ab094f51b36a7a05ab0131fbcd3bfba2a19))
+* Remove unused dependency ([fa6bff4](https://github.com/narnaud/use/commit/fa6bff427d523e0bc5672a91efcadd6bcbca5c12))
+
 ## [0.2.0](https://github.com/narnaud/use/compare/v0.1.0...v0.2.0) (2025-03-19)
 
 

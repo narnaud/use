@@ -1,0 +1,41 @@
+# Visual Studio
+msvc2022:
+  display: Microsoft Visual Studio 2022 - x64
+  defer:
+    - C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat
+# Qt, all versions
+qt{}:
+  display: Qt {} - MSVC - x64
+  pattern:
+    path: C:\Qt
+    regex: "^(\\d+\\.\\d+\\.\\d+)$"
+  use:
+    - msvc2022
+  set:
+    QTDIR: C:\Qt\{}\msvc2019_64\
+  append:
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2019_64\
+  path:
+    - C:\Qt\{}\msvc2019_64\bin
+# Example environment
+example:
+  display: Name of the configuration
+  use:
+    - qt6
+    - msvc2022
+    - other
+    - configuration
+    - names
+  defer:
+    - C:\example\path\to\script.bat
+    - C:\example\other\path\to\script.bat
+  set:
+    EXAMPLE_VAR: example value
+  append:
+    EXAMPLE_VAR_APPEND: value appended to EXAMPLE_VAR_APPEND
+  prepend:
+    EXAMPLE_VAR_PREPEND: value prepended to EXAMPLE_VAR_PREPEND
+  path:
+    - C:\example\path\to\add\to\path
+    - C:\example\other\path\to\add\to\path
+  go: C:\example\path\to\go\to

@@ -6,7 +6,7 @@ use colorize::Colorize;
 mod environment;
 use environment::*;
 
-static CONFIG_FILE_NAME: &str = ".useconfig.json";
+static CONFIG_FILE_NAME: &str = ".useconfig.yaml";
 
 #[derive(Parser)]
 #[command(

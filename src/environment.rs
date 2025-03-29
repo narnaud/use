@@ -19,62 +19,6 @@ const APP_INFO: AppInfo = AppInfo {
 };
 const UPDATE_TITLE_KEY: &str = "update-title";
 
-static CONFIG_FILE_EXAMPLE: &str = r#"
-{
-    "example": {
-        "display": "Name of the configuration",
-        "use": [
-            "other",
-            "configuration",
-            "names"
-        ],
-        "defer": [
-            "C:\\example\\path\\to\\script.bat",
-            "C:\\example\\other\\path\\to\\script.bat"
-        ],
-        "set": {
-            "EXAMPLE_VAR": "example value"
-        },
-        "append": {
-            "EXAMPLE_VAR_APPEND": "value appended to EXAMPLE_VAR_APPEND"
-        },
-        "prepend": {
-            "EXAMPLE_VAR_PREPEND": "value prepended to EXAMPLE_VAR_PREPEND"
-        },
-        "path": [
-            "C:\\example\\path\\to\\add\\to\\path",
-            "C:\\example\\other\\path\\to\\add\\to\\path"
-        ],
-        "go": "C:\\example\\path\\to\\go\\to"
-    },
-    "msvc2022": {
-        "display": "Microsoft Visual Studio 2022 - x64",
-        "defer": [
-            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat"
-        ]
-    },
-    "qt{}.{}.{}": {
-        "display": "Qt {}.{}.{} - MSVC - x64",
-        "pattern": {
-            "path": "C:\\Qt",
-            "regex": "(\\d+)\\.(\\d+)\\.(\\d+)"
-        },
-        "use": [
-            "msvc2022"
-        ],
-        "set": {
-            "QTDIR": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
-        },
-        "append": {
-            "CMAKE_PREFIX_PATH": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
-        },
-        "path": [
-            "C:\\Qt\\{}.{}.{}\\msvc2019_64\\bin"
-        ]
-    },
-}
-"#;
-
 /******************************************************************************
  * Preferences Management
  *****************************************************************************/
@@ -172,7 +116,8 @@ impl Environment {
 pub fn create_config_file(path: &str) {
     println!("{} {} file", "    Creating".info(), path);
     let mut file = std::fs::File::create(path).expect("Failed to create file");
-    file.write_all(CONFIG_FILE_EXAMPLE.as_bytes())
+    let config_content = include_str!("useconfig.yaml");
+    file.write_all(config_content.as_bytes())
         .expect("Failed to write to file");
     println!("{} {} file", "     Created".success().update(), path);
 }
@@ -182,7 +127,7 @@ pub fn read_config_file(
     file_path: &str,
 ) -> Result<HashMap<String, Environment>, Box<dyn std::error::Error>> {
     let reader = BufReader::new(fs::File::open(file_path)?);
-    let mut config: HashMap<String, Environment> = serde_json::from_reader(reader)?;
+    let mut config: HashMap<String, Environment> = serde_yaml::from_reader(reader)?;
 
     // Process pattern-based environments
     let pattern_configs: HashMap<String, Environment> = config

@@ -48,40 +48,55 @@ Options:
 
 ## Configuration
 
-**Use** expect a configuration file in `~/.useconfig.json` (or `%USERPROFILE%\.useconfig.json` on Windows). Here is a small example:
+**Use** expect a YAML configuration file in `~/.useconfig.yaml` (or `%USERPROFILE%\.useconfig.yaml` on Windows). Here is a small example:
 
-```json
-{
-    "msvc2022": {
-        "display": "MVSC 2022",
-        "defer": [
-            "C:\\Program Files\\Microsoft Visual Studio\\2022\\Professional\\VC\\Auxiliary\\Build\\vcvars64.bat"
-        ]
-    },
-    "qt6.7": {
-        "display": "Qt 6.7.0",
-        "set": {
-            "QTDIR": "C:\\Qt\\6.7.0\\msvc2019_64\\"
-        },
-        "append": {
-            "CMAKE_PREFIX_PATH": "C:\\Qt\\6.7.0\\msvc2019_64\\"
-        },
-        "path": [
-            "C:\\Qt\\6.7.0\\msvc2019_64\\bin"
-        ]
-    },
-    "knut": {
-        "display": "Knut",
-        "use": [
-            "msvc2022",
-            "qt6.7"
-        ],
-        "go": "C:\\dev\\knut\\knut"
-    }
-}
+```yaml
+# Visual Studio
+msvc2022:
+  display: Microsoft Visual Studio 2022 - x64
+  defer:
+    - C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat
+
+# Qt, all versions
+qt{}:
+  display: Qt {} - MSVC - x64
+  pattern:
+    path: C:\Qt
+    regex: "^(\\d+\\.\\d+\\.\\d+)$"
+  use:
+    - msvc2022
+  set:
+    QTDIR: C:\Qt\{}\msvc2019_64\
+  append:
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2019_64\
+  path:
+    - C:\Qt\{}\msvc2019_64\bin
+
+# Example environment
+example:
+  display: Name of the configuration
+  use:
+    - qt6
+    - msvc2022
+    - other
+    - configuration
+    - names
+  defer:
+    - C:\example\path\to\script.bat
+    - C:\example\other\path\to\script.bat
+  set:
+    EXAMPLE_VAR: example value
+  append:
+    EXAMPLE_VAR_APPEND: value appended to EXAMPLE_VAR_APPEND
+  prepend:
+    EXAMPLE_VAR_PREPEND: value prepended to EXAMPLE_VAR_PREPEND
+  path:
+    - C:\example\path\to\add\to\path
+    - C:\example\other\path\to\add\to\path
+  go: C:\example\path\to\go\to
 ```
 
-The json file is a map of environments, the key being used as the environment name when running the command. For each environment, you can have:
+The YAML file is a map of environments, the key being used as the environment name when running the command. For each environment, you can have:
 
 - `display`: string displayed when setting the environment
 - `set`: list of environment variables to initialize
@@ -95,30 +110,24 @@ The json file is a map of environments, the key being used as the environment na
 
 ### Pattern matching
 
-It is now possible to define multiple environments in a single definition. This is especially interesting if you have multiple versions of the same lib or app.
+It is possible to define multiple environments in a single definition. This is especially interesting if you have multiple versions of the same lib or app.
 
-For example, here is a definition for Qt on Windows:
+For example, here is a definition for Qt on Windows (the `{}` are replaced with the regex capture):
 
-```json
-    "qt{}.{}.{}": {
-        "display": "Qt {}.{}.{} - MSVC - x64",
-        "pattern": {
-            "path": "C:\\Qt",
-            "regex": "(\\d+)\\.(\\d+)\\.(\\d+)"
-        },
-        "use": [
-            "msvc2022"
-        ],
-        "set": {
-            "QTDIR": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
-        },
-        "append": {
-            "CMAKE_PREFIX_PATH": "C:\\Qt\\{}.{}.{}\\msvc2019_64\\"
-        },
-        "path": [
-            "C:\\Qt\\{}.{}.{}\\msvc2019_64\\bin"
-        ]
-    },
+```yaml
+qt{}:
+  display: Qt {} - MSVC - x64
+  pattern:
+    path: C:\Qt
+    regex: "^(\\d+\\.\\d+\\.\\d+)$"
+  use:
+    - msvc2022
+  set:
+    QTDIR: C:\Qt\{}\msvc2019_64\
+  append:
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2019_64\
+  path:
+    - C:\Qt\{}\msvc2019_64\bin
 ```
 
 The interesting part is the `pattern` key:
@@ -136,6 +145,20 @@ C:Qt
 ```
 
 And it will create 3 different environments: `qt5.12.2`, `qt6.5.3` and `qt6.8.2`.
+
+You can use partial key to use an environment. Following on the same example:
+
+- `use qt`: set up the latest Qt version, here Qt 6.8.2
+- `use qt6.5`: set up the latest Qt 6.5 version available, here 6.5.3
+- `use qt5.12.2`: set up an explicit Qt version
+
+It works the same for the YAML configuration, you can use partial keys:
+
+```yaml
+example:
+  use:
+    - qt6
+```
 
 ## Shell integration
 

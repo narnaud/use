@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/narnaud/use/compare/v0.3.0...v0.3.1) (2025-03-29)
+
+
+### Bug Fixes
+
+* **posh:** Fix powershell manifest ([79b61c3](https://github.com/narnaud/use/commit/79b61c35d58eea70720b94b44f910ad17c68fd01))
+
 ## [0.3.0](https://github.com/narnaud/use/compare/v0.2.0...v0.3.0) (2025-03-29)
 
 

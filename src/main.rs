@@ -5,6 +5,8 @@ mod colorize;
 use colorize::Colorize;
 mod environment;
 use environment::*;
+mod settings;
+use settings::*;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.yaml";
 
@@ -75,6 +77,6 @@ fn main() {
             .iter()
             .for_each(|key| println!("{}", key));
     } else {
-        use_environment(args.name.unwrap(), &environments);
+        use_environment(args.name.unwrap(), &environments, get_update_title());
     }
 }

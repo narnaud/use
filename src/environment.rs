@@ -1,4 +1,3 @@
-use preferences::{AppInfo, Preferences, PreferencesMap};
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -9,48 +8,6 @@ use std::path::PathBuf;
 use crate::colorize;
 use colorize::Colorize;
 use semver::Version;
-
-/******************************************************************************
- * Constants
- *****************************************************************************/
-const APP_INFO: AppInfo = AppInfo {
-    name: "use",
-    author: "narnaud",
-};
-const UPDATE_TITLE_KEY: &str = "update-title";
-
-/******************************************************************************
- * Preferences Management
- *****************************************************************************/
-mod prefs {
-    use super::*;
-
-    /// Get the preferences map
-    fn load() -> PreferencesMap<String> {
-        PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
-    }
-
-    /// Save the preferences map
-    fn save(prefs: &PreferencesMap<String>) {
-        prefs
-            .save(&APP_INFO, env!("CARGO_PKG_NAME"))
-            .expect("Failed to save preferences");
-    }
-
-    /// Store the update title preference.
-    pub fn set_update_title(enabled: bool) {
-        let mut prefs = load();
-        prefs.insert(UPDATE_TITLE_KEY.into(), enabled.to_string());
-        save(&prefs);
-    }
-
-    /// Get the update title preference.
-    pub fn get_update_title() -> bool {
-        load().get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true")
-    }
-}
-
-pub use prefs::{get_update_title, set_update_title};
 
 /******************************************************************************
  * Data Structures
@@ -172,7 +129,7 @@ pub fn list_environments(envs: &HashMap<String, Environment>) -> Vec<&String> {
 }
 
 /// Use the environment by printing the configuration to the console
-pub fn use_environment(name: String, envs: &HashMap<String, Environment>) {
+pub fn use_environment(name: String, envs: &HashMap<String, Environment>, title_update: bool) {
     let keys = list_environments(envs);
     let names = resolve_dependencies(name, keys.as_ref(), envs);
 
@@ -181,7 +138,7 @@ pub fn use_environment(name: String, envs: &HashMap<String, Environment>) {
         print_environment(&envs[name]);
     }
 
-    finalize_setup(names.first().unwrap(), envs);
+    finalize_setup(names.first().unwrap(), envs, title_update);
 }
 
 fn resolve_dependencies(
@@ -230,7 +187,7 @@ fn print_environment(env: &Environment) {
         println!("GO: {}", go);
     }
     if let Some(display) = &env.display {
-        println!("{} {}", "  Configured".success(), display);
+        println!("{} {}", "  Configured".success().update(), display);
     }
 }
 
@@ -276,11 +233,11 @@ fn print_add_value(key: &str, value: &str, append: bool) {
 }
 
 /// Send the final setup information
-fn finalize_setup(name: &str, envs: &HashMap<String, Environment>) {
+fn finalize_setup(name: &str, envs: &HashMap<String, Environment>, title_update: bool) {
     println!("SET: USE_PROMPT={}", name);
     let title = envs[name].display.as_deref().unwrap_or(name);
 
-    if get_update_title() {
+    if title_update {
         println!("TITLE: {}", title);
     }
 

@@ -241,7 +241,7 @@ fn finalize_setup(name: &str, envs: &HashMap<String, Environment>, title_update:
         println!("TITLE: {}", title);
     }
 
-    println!("{} setting up {}", "    Finished".success(), title.info());
+    println!("{} setting up {}\n", "    Finished".success(), title.info());
 }
 
 /******************************************************************************

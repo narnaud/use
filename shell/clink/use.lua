@@ -69,12 +69,11 @@ local function use_setenv(param)
             -- Change the current directory
             elseif line:sub(1, 4) == "GO: " then
                 local dir = line:sub(5)
-                os.chdir(dir)
-                table.insert(result, "pushd \"" .. dir .. "\"\n")
+                table.insert(result, "pushd \"" .. dir .. "\" > nul & echo \x1b[2A")
             -- Execute a command
             elseif line:sub(1, 7) == "DEFER: " then
                 local script = line:sub(8)
-                table.insert(result, "call \"" .. script .. "\" > NUL\n")
+                table.insert(result, "call \"" .. script .. "\" > nul & echo \x1b[2A")
             elseif line:sub(1, 7) == "TITLE: " then
                 local title = line:sub(8)
                 console.settitle(title)

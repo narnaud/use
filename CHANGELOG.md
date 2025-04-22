@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/narnaud/use/compare/v0.3.1...v0.3.2) (2025-04-22)
+
+
+### Bug Fixes
+
+* **clink:** Do not add empty lines ([cc78257](https://github.com/narnaud/use/commit/cc782578b85302b041d906d968503ee6a92003c0))
+
 ## [0.3.1](https://github.com/narnaud/use/compare/v0.3.0...v0.3.1) (2025-03-29)
 
 

@@ -1,3 +1,4 @@
+
 # Use - 🚀 Setting up development environment easily
 
 **Use** is a command line tool to setup environment defined in a json file. The syntax is easy enough to be able to handle setup with multiple environment variables and secondary scripts.
@@ -21,6 +22,22 @@ Install **use** with [scoop](<https://scoop.sh/>):
 ```
 scoop bucket add narnaud https://github.com/narnaud/scoop-bucket
 scoop install use
+```
+
+## Set up your shell
+
+### Powershell
+
+```powershell
+Invoke-Expression (&use init powershell)
+```
+
+### Cmd
+
+You need clink wit Cmd. Create a file at this path %LocalAppData%\clink\use.lua with the following contents:
+
+```cmd
+load(io.popen('use init cmd'):read("*a"))()
 ```
 
 ## Usage

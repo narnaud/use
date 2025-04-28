@@ -1,16 +1,4 @@
 --------------------------------------------------------------------------------
--- Usage:
---
--- This adds a new command that can be typed at the command line (the command
--- does not work in batch scripts):
---
---      use [options] [environment]
---
--- It sets the environment variables for the current session.
---
--- Completion generators for {command} show matches.
-
---------------------------------------------------------------------------------
 -- Customization.
 --
 -- use_commands
@@ -24,8 +12,7 @@
 use_commands = use_commands or "use"
 
 --------------------------------------------------------------------------------
--- Use execution.
-
+-- Check if the `use` command is used and extract arguments.
 local function use_getparam(line)
     -- Check for "use" command.
     local candidate = line:match("^[ \t]*([^ \t]+)")
@@ -51,8 +38,10 @@ local function use_getparam(line)
     return param
 end
 
+--------------------------------------------------------------------------------
+-- Use execution.
 local function use_setenv(param)
-    local command = string.format('2>nul use-config %s', param)
+    local f = io.popen([[::USE::]] .. " " .. param)
     local f = io.popen(command)
     local result = {}
     if f then
@@ -86,6 +75,8 @@ local function use_setenv(param)
     return result
 end
 
+--------------------------------------------------------------------------------
+-- Filter out input to run the use executable if needed
 local function use_filter(line)
     local param = use_getparam(line)
     if not param then
@@ -93,24 +84,20 @@ local function use_filter(line)
     end
 
     -- Check for any flags
-    if param == "" or param:match("^-") then
-        os.execute("use-config " .. param)
+    if param == "" or param:match("^[-|init|list|set|help]") then
+        os.execute([[::USE::]] .. " " .. param)
         return "", false
     else
         return use_setenv(param), false
     end
 end
-
 clink.onfilterinput(use_filter)
 
-
 --------------------------------------------------------------------------------
--- Use Completions
-
--- Lists all known envs
+-- Use Completions, lists all known envs, not commands (init, list...)
 local function list_envs()
     local envs
-    local r = io.popen("2>nul use-config --list")
+    local r = io.popen([[::USE::]] .. " list")
     envs = {}
     for line in r:lines() do
         table.insert(envs, line)
@@ -120,5 +107,9 @@ end
 
 clink.argmatcher(table.unpack(string.explode(use_commands or "use")))
 :addarg(list_envs())
-:addflags("--create", "-c", "--list", "-l", "--help", "-h", "--version", "-V")
+:addflags("--help", "-h", "--version", "-V")
 :nofiles()
+
+--------------------------------------------------------------------------------
+-- Set current shell
+os.setenv('USE_SHELL', 'cmd')

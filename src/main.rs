@@ -7,6 +7,9 @@ mod environment;
 use environment::*;
 mod settings;
 use settings::*;
+mod context;
+use context::*;
+mod init;
 
 static CONFIG_FILE_NAME: &str = ".useconfig.yaml";
 
@@ -19,18 +22,20 @@ static CONFIG_FILE_NAME: &str = ".useconfig.yaml";
 struct Args {
     /// Name of the environment to use
     name: Option<String>,
-    /// List all environments
-    #[clap(short, long)]
-    list: bool,
-    /// Create a new config file
-    #[clap(short, long)]
-    create: bool,
     #[clap(subcommand)]
     command: Option<Command>,
 }
 
 #[derive(Parser)]
 enum Command {
+    ///  Prints the shell function used for shell integration
+    Init {
+        shell: Shell,
+        #[clap(long)]
+        print_full_init: bool,
+    },
+    /// List all environments
+    List,
     /// Adjust use's settings
     Set {
         /// Change the terminal title based on the environment chosen
@@ -47,19 +52,41 @@ fn main() {
         .to_str()
         .expect("Could not convert path to string");
 
-    let args = Args::parse();
+    let mut args = Args::parse();
 
-    if args.create {
-        create_config_file(config_file);
-        return;
+    if args.name.is_none() && args.command.is_none() {
+        args.command = Some(Command::List);
     }
 
-    if let Some(Command::Set {
-        update_title: Some(update),
-    }) = args.command
-    {
-        set_update_title(update);
-        return;
+    match args.command {
+        Some(Command::Init {
+            shell,
+            print_full_init,
+        }) => {
+                if print_full_init {
+                    init::init_main(shell).expect("can't init_main");
+                } else {
+                    init::init_stub(shell).expect("can't init_stub");
+                }
+            return;
+        }
+        Some(Command::List) => {
+            list_environments(&read_config_file(config_file).unwrap_or_else(|e| {
+                eprintln!("{} reading {} file: {}", "error:".error(), config_file, e);
+                std::process::exit(1);
+            }))
+            .iter()
+            .for_each(|key| println!("{}", key));
+            return;
+        }
+        Some(Command::Set { update_title }) => {
+            if let Some(update) = update_title {
+                set_update_title(update);
+                return;
+            }
+            return;
+        }
+        None => {}
     }
 
     if !config_file_path.exists() {
@@ -72,11 +99,5 @@ fn main() {
         std::process::exit(1);
     });
 
-    if args.list || args.name.is_none() {
-        list_environments(&environments)
-            .iter()
-            .for_each(|key| println!("{}", key));
-    } else {
-        use_environment(args.name.unwrap(), &environments, get_update_title());
-    }
+    use_environment(args.name.unwrap(), &environments, get_update_title());
 }

@@ -6,26 +6,48 @@ const APP_INFO: AppInfo = AppInfo {
 };
 const UPDATE_TITLE_KEY: &str = "update-title";
 
-/// Get the preferences map
-fn load() -> PreferencesMap<String> {
-    PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
+pub struct Settings {
+    pub update_title: bool,
 }
 
-/// Save the preferences map
-fn save(prefs: &PreferencesMap<String>) {
-    prefs
-        .save(&APP_INFO, env!("CARGO_PKG_NAME"))
-        .expect("Failed to save preferences");
+#[derive(Debug, Clone, PartialEq, clap::ValueEnum)]
+pub enum SettingsKey {
+    /// Change the terminal title based on the environment chosen
+    UpdateTitle,
 }
 
-/// Store the update title preference.
-pub fn set_update_title(enabled: bool) {
-    let mut prefs = load();
-    prefs.insert(UPDATE_TITLE_KEY.into(), enabled.to_string());
-    save(&prefs);
+impl Settings {
+    fn load() -> PreferencesMap<String> {
+        PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
+    }
+
+    pub fn set(key: SettingsKey, value: &str) {
+        let mut settings = Settings::default();
+        match key {
+            SettingsKey::UpdateTitle => settings.update_title = value.parse().unwrap_or(false),
+        }
+        settings.save();
+    }
+
+    fn save(self) {
+        let mut prefs: PreferencesMap<String> = Default::default();
+        prefs.insert(UPDATE_TITLE_KEY.into(), self.update_title.to_string());
+        prefs
+            .save(&APP_INFO, env!("CARGO_PKG_NAME"))
+            .expect("Failed to save preferences");
+    }
+
+    pub fn print() {
+        let settings = Settings::default();
+        println!("update-title    {}", settings.update_title);
+    }
 }
 
-/// Get the update title preference.
-pub fn get_update_title() -> bool {
-    load().get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true")
+impl Default for Settings {
+    fn default() -> Self {
+        let prefs = Settings::load();
+        Self {
+            update_title: prefs.get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true"),
+        }
+    }
 }

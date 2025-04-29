@@ -38,9 +38,11 @@ enum Command {
     List,
     /// Adjust use's settings
     Set {
-        /// Change the terminal title based on the environment chosen
-        #[clap(long = "update-title")]
-        update_title: Option<bool>,
+        /// Configuration key to edit
+        #[clap(requires = "value")]
+        key: Option<SettingsKey>,
+        /// Value to place into that key
+        value: Option<String>,
     },
 }
 
@@ -63,11 +65,11 @@ fn main() {
             shell,
             print_full_init,
         }) => {
-                if print_full_init {
-                    init::init_main(shell).expect("can't init_main");
-                } else {
-                    init::init_stub(shell).expect("can't init_stub");
-                }
+            if print_full_init {
+                init::init_main(shell).expect("can't init_main");
+            } else {
+                init::init_stub(shell).expect("can't init_stub");
+            }
             return;
         }
         Some(Command::List) => {
@@ -79,10 +81,13 @@ fn main() {
             .for_each(|key| println!("{}", key));
             return;
         }
-        Some(Command::Set { update_title }) => {
-            if let Some(update) = update_title {
-                set_update_title(update);
-                return;
+        Some(Command::Set { key, value }) => {
+            if let Some(key) = key {
+                if let Some(value) = value {
+                    Settings::set(key, &value);
+                }
+            } else {
+                Settings::print();
             }
             return;
         }
@@ -99,5 +104,9 @@ fn main() {
         std::process::exit(1);
     });
 
-    use_environment(args.name.unwrap(), &environments, get_update_title());
+    use_environment(
+        args.name.unwrap(),
+        &environments,
+        Settings::default().update_title,
+    );
 }

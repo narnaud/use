@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::{env, io};
 use which::which;
 
-use crate::context::Shell;
 use crate::colorize::Colorize;
+use crate::context::Shell;
 
 // The workflow and part of the code is copied from starship:
 // https://starship.rs
@@ -45,17 +45,13 @@ pub fn init_stub(shell: Shell) -> io::Result<()> {
 
     match shell {
         Shell::PowerShell => print!(
-                r#"Invoke-Expression (& {} init powershell --print-full-init | Out-String)"#,
-                use_path.sprint_pwsh()?
-            ),
-        Shell::Cmd =>
-            print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
+            r#"Invoke-Expression (& {} init powershell --print-full-init | Out-String)"#,
+            use_path.sprint_pwsh()?
+        ),
+        Shell::Cmd => print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
         _ => {
             eprintln!("{} Unsupported shell: {shell:?}", "error:".error());
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Unsupported shell",
-            ));
+            return Err(io::Error::new(io::ErrorKind::Other, "Unsupported shell"));
         }
     }
     Ok(())
@@ -67,16 +63,11 @@ pub fn init_main(shell: Shell) -> io::Result<()> {
     let use_path = UsePath::init()?;
 
     match shell {
-        Shell::PowerShell =>
-            print_script(POWERSHELL_INIT, &use_path.sprint_pwsh()?),
-        Shell::Cmd =>
-            print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
+        Shell::PowerShell => print_script(POWERSHELL_INIT, &use_path.sprint_pwsh()?),
+        Shell::Cmd => print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
         _ => {
             eprintln!("{} Unsupported shell: {shell:?}", "error:".error());
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Unsupported shell",
-            ));
+            return Err(io::Error::new(io::ErrorKind::Other, "Unsupported shell"));
         }
     }
     Ok(())

@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.0.0](https://github.com/narnaud/use/compare/v0.3.2...v1.0.0) (2025-08-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* use is now generating the shell commands
+* Change settings cli options
+* Integrate shell initialisation in the executable
+
+### Features
+
+* Integrate shell initialisation in the executable ([0adebfd](https://github.com/narnaud/use/commit/0adebfd664e6ad064c44019422876e5c89c3a9e0))
+
+
+### Bug Fixes
+
+* Add shell integration scripts into package ([06e30b6](https://github.com/narnaud/use/commit/06e30b605fbd8b7d26266d659e3dfbeae006d6f9))
+* Another fix, this time the executable name... ([9658269](https://github.com/narnaud/use/commit/965826974ba62499939104a1e03af24b9326f68c))
+
+
+### Code Refactoring
+
+* Change settings cli options ([f6bfb18](https://github.com/narnaud/use/commit/f6bfb1863bffdb880f8a572ff68162733a52a7e4))
+* use is now generating the shell commands ([b23b39f](https://github.com/narnaud/use/commit/b23b39f0b5b5779487a85a68b44d1ca3c6acf18d))
+
 ## [0.3.2](https://github.com/narnaud/use/compare/v0.3.1...v0.3.2) (2025-04-22)
 
 

@@ -12,10 +12,12 @@
 
 As we can't change the console environment from a binary, use is using a dual strategy:
 
-- a binary, `use-config`, to extract all the information for setting up the environment
-- a shell script to setup for a given shell, using the output of `use-config`
+- a binary, `use`, to extract all the information for setting up the environment
+- a shell script to setup for a given shell, using the output of `use`
 
 ## Installation
+
+### Installation via [Scoop](https://scoop.sh/) (preferred)
 
 Install **use** with [scoop](<https://scoop.sh/>):
 
@@ -23,6 +25,12 @@ Install **use** with [scoop](<https://scoop.sh/>):
 scoop bucket add narnaud https://github.com/narnaud/scoop-bucket
 scoop install use
 ```
+
+### Or via archive files
+
+1. Go to the [Releases](https://github.com/narnaud/use/releases) page
+2. Download the latest `use-x86_64-pc-windows-msvc.zip` file
+3. Extract the files from it into a directory.
 
 ## Set up your shell
 
@@ -32,9 +40,12 @@ scoop install use
 Invoke-Expression (&use init powershell)
 ```
 
-### Cmd
+### Clink
 
-You need clink wit Cmd. Create a file at this path %LocalAppData%\clink\use.lua with the following contents:
+> [!TIP]
+> If you install **use** with scoop, you don't need to do anything, it will install such a script automatically.
+
+You need [clink](https://chrisant996.github.io/clink/) wit Cmd. Create a file at this path %LocalAppData%\clink\use.lua with the following contents:
 
 ```cmd
 load(io.popen('use init cmd'):read("*a"))()
@@ -42,14 +53,16 @@ load(io.popen('use init cmd'):read("*a"))()
 
 ## Usage
 
-To use **use**, you need to have `use-config` in the `PATH`, as well as your shell integration setup.
+Once **use** is initialized in your shell, you can type `use` in your shell to have a list of known nvironment, or `use --help` for the help.
 
 ```
 Command-line utility to setup environment
 
-Usage: use [OPTIONS] [NAME] [COMMAND]
+Usage: use [NAME] [COMMAND]
 
 Commands:
+  init  Prints the shell function used for shell integration
+  list  List all environments
   set   Adjust use's settings
   help  Print this message or the help of the given subcommand(s)
 
@@ -57,38 +70,17 @@ Arguments:
   [NAME]  Name of the environment to use
 
 Options:
-  -l, --list     List all environments
-  -c, --create   Create a new config file
   -h, --help     Print help
   -V, --version  Print version
 ```
 
+**use** is using a yaml configuration file to defines the different environments, see below.
+
 ## Configuration
 
-**Use** expect a YAML configuration file in `~/.useconfig.yaml` (or `%USERPROFILE%\.useconfig.yaml` on Windows). Here is a small example:
+**Use** expect a YAML configuration file in `~/.config/use/useconfig.yaml` (or `%USERPROFILE%\.config\use\useconfig.yaml` on Windows). Here is a small example:
 
 ```yaml
-# Visual Studio
-msvc2022:
-  display: Microsoft Visual Studio 2022 - x64
-  defer:
-    - C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat
-
-# Qt, all versions
-qt{}:
-  display: Qt {} - MSVC - x64
-  pattern:
-    path: C:\Qt
-    regex: "^(\\d+\\.\\d+\\.\\d+)$"
-  use:
-    - msvc2022
-  set:
-    QTDIR: C:\Qt\{}\msvc2019_64\
-  append:
-    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2019_64\
-  path:
-    - C:\Qt\{}\msvc2019_64\bin
-
 # Example environment
 example:
   display: Name of the configuration
@@ -98,32 +90,85 @@ example:
     - other
     - configuration
     - names
-  defer:
-    - C:\example\path\to\script.bat
-    - C:\example\other\path\to\script.bat
+  script: |
+    echo "Something"
+    echo "Something else"
   set:
     EXAMPLE_VAR: example value
+    EXAMPLE_VAR_OTHER: other value
   append:
     EXAMPLE_VAR_APPEND: value appended to EXAMPLE_VAR_APPEND
+    EXAMPLE_VAR_OTHER_APPEND: value appended to EXAMPLE_VAR_OTHER_APPEND
   prepend:
     EXAMPLE_VAR_PREPEND: value prepended to EXAMPLE_VAR_PREPEND
+    EXAMPLE_VAR_OTHER_PREPEND: value prepended to EXAMPLE_VAR_OTHER_PREPEND
   path:
     - C:\example\path\to\add\to\path
     - C:\example\other\path\to\add\to\path
   go: C:\example\path\to\go\to
+
+# Visual Studio 2022 x64
+msvc2022:
+  display: Microsoft Visual Studio 2022 - x64
+  for_cmd:
+    script: |
+      call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64 > nul
+  for_powershell:
+    script: |
+      & "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1" -SkipAutomaticLocation -Arch amd64 *>$null
+
+# Qt, all versions, using pattern
+qt{}:
+  display: Qt {} - MSVC - x64
+  pattern:
+    path: C:\Qt
+    regex: "^(\\d+\\.\\d+\\.\\d+)$"
+  use:
+    - msvc2022
+  set:
+    QTDIR: C:\Qt\{}\msvc2022_64\
+  append:
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
+  path:
+    - C:\Qt\{}\msvc2022_64\bin
 ```
 
 The YAML file is a map of environments, the key being used as the environment name when running the command. For each environment, you can have:
 
 - `display`: string displayed when setting the environment
+- `use`: reuse existing environment (they will be setup before)
+- `script`: raw lines to call as a script
 - `set`: list of environment variables to initialize
 - `append`: append values to environment variables
 - `prepend`: prepend values to environment variables
 - `path`: add paths to the `PATH` environment variable
-- `defer`: call one or multiple scripts
-- `use`: reuse existing environment (they will be setup before)
 - `go`: go to a particular directory at the end of the setup
 - `pattern`: use pattern matching to create multiple environments with one definition (see below)
+
+### Shell specific values
+
+It is possible to have for some shell some specific values for one environment, for example:
+
+```yaml
+msvc2022:
+  display: Microsoft Visual Studio 2022 - x64
+  for_cmd:
+    script: |
+      call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64 > nul
+  for_powershell:
+    script: |
+      & "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1" -SkipAutomaticLocation -Arch amd64 *>$null
+```
+
+For the `msvc2022` environment, the display is shared, but the script is different for cmd and powershell:
+
+- `for_cmd`: values specific to the cmd shell,
+- `for_powershell` (or `for_pwsh`): values specific to the powershell shell.
+
+You can change almost everything, except `pttern`:
+
+- `display`, `script` and `go` are replaced,
+- `use`, `set`, `append`, `prepend`, `path` are extended.
 
 ### Pattern matching
 
@@ -140,11 +185,11 @@ qt{}:
   use:
     - msvc2022
   set:
-    QTDIR: C:\Qt\{}\msvc2019_64\
+    QTDIR: C:\Qt\{}\msvc2022_64\
   append:
-    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2019_64\
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
   path:
-    - C:\Qt\{}\msvc2019_64\bin
+    - C:\Qt\{}\msvc2022_64\bin
 ```
 
 The interesting part is the `pattern` key:
@@ -191,75 +236,15 @@ use set --update-title false
 
 Set it to `true` to go back to the default behavior.
 
-### Cmd (Windows)
-
-A batch file is available here: `<use>/cmd/use.cmd`. Add it to your path or create an alias using `doskey`:
-
-```
-doskey use = C:\path\to\<use>\cmd\use.cmd
-```
-
-### Clink (Windows)
-
-[Clink](https://chrisant996.github.io/clink/) is a cmd on steroid (you should definitely use it!).
-
-The integration is done by loading a lua script. Add the `<use>/clink` directory to the list of install scripts:
-
-```
-clink installscripts C:\path\to\<use>\clink
-```
-
-The clink integration has completion (you should really use clink!).
-
-### Powershell
-
-The integration is done via a powershell module, name `use`. Make sure the module is available from the `PSModulePath`, then import it in your powershell profile:
-
-```pwsh
-Import-Module posh-use
-```
-
-The powershell integration has completion.
-
 ### Writing your own integration script
 
-It should be fairly easy to integrate with other shells (contributions are very welcome). The output of `use-config` will be something like that:
+It should be fairly easy to integrate with other shells (contributions are very welcome).
+To do that, you need:
 
-```
-❯ use-config.exe knut
- Configuring Microsoft Visual Studio 2022 - x64
-DEFER: C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat
- Configuring Qt 6.8.2 - MSVC - x64
-SET: QTDIR=C:\Qt\6.8.2\msvc2022_64\
-SET: CMAKE_PREFIX_PATH=C:\Qt\6.8.2\msvc2022_64\
-PATH: C:\Qt\6.8.2\msvc2022_64\bin
- Configuring Knut
-GO: C:\dev\knut\knut
-SET: USE_PROMPT=knut
-TITLE: Knut
-    Finished setting up Knut
-```
+1. initialization script (in init directory): integration of use in the Shell, goal is to provide a method `use` that read and execute the output of the `use` executable,
+2. shell printer (int `shell` directory): provide the shell specific way to set/append/prepend variables, change the PATH and change the title.
 
-The parsing is quite easy:
-
-- `DEFER: script`: run the script `script`
-- `SET: var=value`: set the environment variable `var` to `value`
-- `PATH: path`: prepend a path to the `PATH` environment variable
-- `GO: path`: go to the directory `path`
-- `TITLE: string`: change the console tab title to `string`
-- All other lines should be displayed as is.
-
-> Note: as you can see, there are no `APPEND:` or `PREPEND:`: `use-config` automatically change them to `SET:` commands.
-
-With the script, the same command should display:
-
-```
-❯ use knut
- Configuring Microsoft Visual Studio 2022 - x64
- Configuring Qt 6.8.2 - MSVC - x64
- Configuring Knut
-    Finished setting up Knut
-```
+Please check the powershell and clink integration.
 
 ## Prompt integration
 

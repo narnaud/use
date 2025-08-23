@@ -2,16 +2,16 @@ use clap::Parser;
 use std::str;
 
 mod colorize;
-use colorize::Colorize;
-mod environment;
-use environment::*;
-mod settings;
-use settings::*;
+mod config;
 mod context;
-use context::*;
 mod init;
-
-static CONFIG_FILE_NAME: &str = ".useconfig.yaml";
+mod settings;
+mod shell;
+use colorize::Colorize;
+use config::*;
+use context::*;
+use settings::*;
+use shell::*;
 
 #[derive(Parser)]
 #[command(
@@ -47,12 +47,11 @@ enum Command {
 }
 
 fn main() {
-    let config_file_path = dirs::home_dir()
-        .expect("Could not find home directory")
-        .join(CONFIG_FILE_NAME);
-    let config_file = config_file_path
-        .to_str()
-        .expect("Could not convert path to string");
+    let context = Context::new();
+    if context.os == OperatingSystem::Unknown {
+        eprintln!("{}: Unsupported operating system", "error:".error());
+        std::process::exit(1);
+    }
 
     let mut args = Args::parse();
 
@@ -73,12 +72,13 @@ fn main() {
             return;
         }
         Some(Command::List) => {
-            list_environments(&read_config_file(config_file).unwrap_or_else(|e| {
-                eprintln!("{} reading {} file: {}", "error:".error(), config_file, e);
+            let config = Config::new(&context).unwrap_or_else(|e| {
+                eprintln!("{}: {}", "error:".error(), e);
                 std::process::exit(1);
-            }))
-            .iter()
-            .for_each(|key| println!("{}", key));
+            });
+            config.list().iter().for_each(|env| {
+                println!("{}", env);
+            });
             return;
         }
         Some(Command::Set { key, value }) => {
@@ -94,19 +94,44 @@ fn main() {
         None => {}
     }
 
-    if !config_file_path.exists() {
-        eprintln!("{} {} does not exist", "error:".error(), config_file);
+    let context = Context::new();
+    if context.os == OperatingSystem::Unknown {
+        eprintln!("{}: Unsupported operating system", "error:".error());
+        std::process::exit(1);
+    }
+    if context.shell == Shell::Unknown {
+        eprintln!(
+            "{}: Unknown shell, make sure to initialize use first (see documentation)",
+            "error:".error()
+        );
         std::process::exit(1);
     }
 
-    let environments = read_config_file(config_file).unwrap_or_else(|e| {
-        eprintln!("{} reading {} file: {}", "error:".error(), config_file, e);
+    let settings = Settings::new();
+    let shell_printer = create_shell_printer(&context);
+    let config = Config::new(&context).unwrap_or_else(|e| {
+        show_error(&e, shell_printer.as_ref());
         std::process::exit(1);
     });
 
-    use_environment(
-        args.name.unwrap(),
-        &environments,
-        Settings::default().update_title,
-    );
+    let env_name = args.name.expect("can't unwrap environment name");
+    config
+        .use_env(&env_name, &settings, shell_printer.as_ref())
+        .unwrap_or_else(|e| {
+            show_error(&e, shell_printer.as_ref());
+            std::process::exit(1);
+        });
+}
+
+fn create_shell_printer(context: &Context) -> Box<dyn ShellPrinter> {
+    match context.shell {
+        Shell::Powershell => Box::new(PowershellPrinter {}),
+        Shell::Cmd => Box::new(CmdPrinter {}),
+        Shell::Unknown => panic!("Unsupported shell"),
+    }
+}
+
+fn show_error(message: &str, shell_printer: &dyn ShellPrinter) {
+    let error = format!("{}: {}", "error:".error(), message);
+    println!("{}", shell_printer.echo(&error));
 }

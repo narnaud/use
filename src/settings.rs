@@ -17,12 +17,19 @@ pub enum SettingsKey {
 }
 
 impl Settings {
+    pub fn new() -> Self {
+        let prefs = Settings::load();
+        Self {
+            update_title: prefs.get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true"),
+        }
+    }
+
     fn load() -> PreferencesMap<String> {
         PreferencesMap::load(&APP_INFO, env!("CARGO_PKG_NAME")).unwrap_or_default()
     }
 
     pub fn set(key: SettingsKey, value: &str) {
-        let mut settings = Settings::default();
+        let mut settings = Settings::new();
         match key {
             SettingsKey::UpdateTitle => settings.update_title = value.parse().unwrap_or(false),
         }
@@ -38,16 +45,7 @@ impl Settings {
     }
 
     pub fn print() {
-        let settings = Settings::default();
+        let settings = Settings::new();
         println!("update-title    {}", settings.update_title);
-    }
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        let prefs = Settings::load();
-        Self {
-            update_title: prefs.get(UPDATE_TITLE_KEY).is_none_or(|s| s == "true"),
-        }
     }
 }

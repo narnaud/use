@@ -1,0 +1,50 @@
+# Example environment
+example:
+  display: Name of the configuration
+  use:
+    - qt6
+    - msvc2022
+    - other
+    - configuration
+    - names
+  script: |
+    echo "Something"
+    echo "Something else"
+  set:
+    EXAMPLE_VAR: example value
+    EXAMPLE_VAR_OTHER: other value
+  append:
+    EXAMPLE_VAR_APPEND: value appended to EXAMPLE_VAR_APPEND
+    EXAMPLE_VAR_OTHER_APPEND: value appended to EXAMPLE_VAR_OTHER_APPEND
+  prepend:
+    EXAMPLE_VAR_PREPEND: value prepended to EXAMPLE_VAR_PREPEND
+    EXAMPLE_VAR_OTHER_PREPEND: value prepended to EXAMPLE_VAR_OTHER_PREPEND
+  path:
+    - C:\example\path\to\add\to\path
+    - C:\example\other\path\to\add\to\path
+  go: C:\example\path\to\go\to
+
+# Visual Studio 2022 x64
+msvc2022:
+  display: Microsoft Visual Studio 2022 - x64
+  for_cmd:
+    script: |
+      call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" amd64 > nul
+  for_powershell:
+    script: |
+      & "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\Launch-VsDevShell.ps1" -SkipAutomaticLocation -Arch amd64 *>$null
+
+# Qt, all versions, using pattern
+qt{}:
+  display: Qt {} - MSVC - x64
+  pattern:
+    path: C:\Qt
+    regex: "^(\\d+\\.\\d+\\.\\d+)$"
+  use:
+    - msvc2022
+  set:
+    QTDIR: C:\Qt\{}\msvc2022_64\
+  append:
+    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
+  path:
+    - C:\Qt\{}\msvc2022_64\bin

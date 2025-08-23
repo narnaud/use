@@ -44,7 +44,7 @@ pub fn init_stub(shell: Shell) -> io::Result<()> {
     let use_path = UsePath::init()?;
 
     match shell {
-        Shell::PowerShell => print!(
+        Shell::Powershell => print!(
             r#"Invoke-Expression (& {} init powershell --print-full-init | Out-String)"#,
             use_path.sprint_pwsh()?
         ),
@@ -63,7 +63,7 @@ pub fn init_main(shell: Shell) -> io::Result<()> {
     let use_path = UsePath::init()?;
 
     match shell {
-        Shell::PowerShell => print_script(POWERSHELL_INIT, &use_path.sprint_pwsh()?),
+        Shell::Powershell => print_script(POWERSHELL_INIT, &use_path.sprint_pwsh()?),
         Shell::Cmd => print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
         _ => {
             eprintln!("{} Unsupported shell: {shell:?}", "error:".error());
@@ -75,7 +75,9 @@ pub fn init_main(shell: Shell) -> io::Result<()> {
 
 /// Print the given script after replacing the placeholder with the given path
 fn print_script(script: &str, path: &str) {
-    let script = script.replace("::USE::", path);
+    // Escape path for Windows
+    let path = path.replace("\\", "\\\\");
+    let script = script.replace("::USE::", path.as_str());
     print!("{script}");
 }
 

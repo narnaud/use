@@ -40,37 +40,32 @@ end
 
 --------------------------------------------------------------------------------
 -- Use execution.
-local function use_setenv(param)
-    local f = io.popen([[::USE::]] .. " " .. param)
-    local f = io.popen(command)
+local function get_tmp_script()
+    local tmpdir = os.getenv("TMP") or os.getenv("TEMP") or "/tmp"
+    local filename = tmpdir .. "/use_clink.bat"
+    return filename
+end
+
+--------------------------------------------------------------------------------
+-- Use execution.
+local function use_run(param)
+    local use_output = io.popen(::USE:: .. " " .. param)
     local result = {}
-    if f then
-        for line in f:lines() do
-            -- Set the environment variable
-            if line:sub(1, 5) == "SET: " then
-                line = line:sub(6)
-                local env, value = line:match("([^=]+)=(.*)")
-                os.setenv(env, value)
-            -- Prepend to the PATH
-            elseif line:sub(1, 6) == "PATH: " then
-                local path = line:sub(7)
-                os.setenv("PATH", path .. ";" .. os.getenv("PATH"))
-            -- Change the current directory
-            elseif line:sub(1, 4) == "GO: " then
-                local dir = line:sub(5)
-                table.insert(result, "pushd \"" .. dir .. "\" > nul & echo \x1b[2A")
-            -- Execute a command
-            elseif line:sub(1, 7) == "DEFER: " then
-                local script = line:sub(8)
-                table.insert(result, "call \"" .. script .. "\" > nul & echo \x1b[2A")
-            elseif line:sub(1, 7) == "TITLE: " then
-                local title = line:sub(8)
-                console.settitle(title)
-            else
-                print(line)
+    if use_output then
+        local filename = get_tmp_script()
+        local file = io.open(filename, "w")
+        if file then
+            file:write("@echo off\n")
+            for line in use_output:lines() do
+                file:write(line)
+                file:write("\n")
             end
+            file:close()
+            table.insert(result, "call " .. filename .. "& echo \x1b[2A")
+        else
+            table.insert(result, "echo Failed to create file: " .. filename)
         end
-        f:close()
+        use_output:close()
     end
     return result
 end
@@ -85,10 +80,10 @@ local function use_filter(line)
 
     -- Check for any flags
     if param == "" or param:match("^[-|init|list|set|help]") then
-        os.execute([[::USE::]] .. " " .. param)
+        os.execute(::USE:: .. " " .. param)
         return "", false
     else
-        return use_setenv(param), false
+        return use_run(param), false
     end
 end
 clink.onfilterinput(use_filter)
@@ -97,7 +92,7 @@ clink.onfilterinput(use_filter)
 -- Use Completions, lists all known envs, not commands (init, list...)
 local function list_envs()
     local envs
-    local r = io.popen([[::USE::]] .. " list")
+    local r = io.popen(::USE:: .. " list")
     envs = {}
     for line in r:lines() do
         table.insert(envs, line)
@@ -105,11 +100,13 @@ local function list_envs()
     return envs
 end
 
+--------------------------------------------------------------------------------
+-- Set current shell
+os.setenv('USE_SHELL', 'cmd')
+
+--------------------------------------------------------------------------------
+-- Set current shell
 clink.argmatcher(table.unpack(string.explode(use_commands or "use")))
 :addarg(list_envs())
 :addflags("--help", "-h", "--version", "-V")
 :nofiles()
-
---------------------------------------------------------------------------------
--- Set current shell
-os.setenv('USE_SHELL', 'cmd')

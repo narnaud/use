@@ -27,7 +27,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           7z a use-${{ matrix.target }}.zip `
-            LICENSE README.md `
+            LICENSE README.md ./shell/* `
             ./target/${{ matrix.target }}/release/use-config.exe
       - name: Post Build | Checksums
         shell: bash

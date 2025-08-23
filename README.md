@@ -224,8 +224,6 @@ example:
 
 ## Shell integration
 
-All shell integrations expect `use-config` to be accessible in the `PATH`.
-
 ### Changing the terminal title
 
 By default, **use** is going to change the terminal title using the environment name. You are free to change the settings:

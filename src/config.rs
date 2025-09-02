@@ -122,8 +122,19 @@ impl Environment {
         }
     }
 
+    fn env_name(&self) -> &str {
+        if let Some(display) = &self.global.display {
+            display
+        } else {
+            &self.name
+        }
+    }
+
     /// Print the environment using the provided ShellPrinter
     pub fn print(&self, printer: &dyn ShellPrinter) {
+        let text = format!("{} {}", " Configuring".success(), self.env_name());
+        println!("{}", printer.echo(&text));
+
         if let Some(set) = &self.global.set {
             for (key, value) in set {
                 println!("{}", printer.set(key, value));
@@ -154,11 +165,6 @@ impl Environment {
 
         if let Some(go) = &self.global.go {
             println!("{}", printer.go(go));
-        }
-
-        if let Some(display) = &self.global.display {
-            let text = format!("{} {}", "Configured".success(), display);
-            println!("{}", printer.echo(&text));
         }
 
         // Set the USE_PROMPT environment variable
@@ -245,6 +251,11 @@ impl Config {
             shell_printer.change_title(name);
         }
 
+        // All good, just show a small message
+        let env = envs.first().unwrap();
+        let text = format!("{} setting up {}", "    Finished".success(), env.env_name().info());
+        println!("{}", shell_printer.echo(&text));
+
         Ok(())
     }
 
@@ -264,9 +275,6 @@ impl Config {
         for env in envs.iter().rev() {
             env.display();
         }
-
-        // Add an empty line
-        println!();
 
         Ok(())
     }

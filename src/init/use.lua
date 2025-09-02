@@ -60,6 +60,7 @@ local function use_run(param)
                 file:write(line)
                 file:write("\n")
             end
+            file:write("echo.\n")
             file:close()
             table.insert(result, "call " .. filename .. "& echo \x1b[2A")
         else

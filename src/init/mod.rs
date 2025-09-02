@@ -24,7 +24,7 @@ impl UsePath {
         let current_exe = self
             .native_path
             .to_str()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "can't convert to str"))?;
+            .ok_or_else(|| io::Error::other("can't convert to str"))?;
         Ok(current_exe)
     }
     /// `PowerShell` specific path escaping
@@ -51,7 +51,7 @@ pub fn init_stub(shell: Shell) -> io::Result<()> {
         Shell::Cmd => print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
         _ => {
             eprintln!("{} Unsupported shell: {shell:?}", "error:".error());
-            return Err(io::Error::new(io::ErrorKind::Other, "Unsupported shell"));
+            return Err(io::Error::other("Unsupported shell"));
         }
     }
     Ok(())
@@ -67,7 +67,7 @@ pub fn init_main(shell: Shell) -> io::Result<()> {
         Shell::Cmd => print_script(CLINK_INIT, &use_path.sprint_cmdexe()?),
         _ => {
             eprintln!("{} Unsupported shell: {shell:?}", "error:".error());
-            return Err(io::Error::new(io::ErrorKind::Other, "Unsupported shell"));
+            return Err(io::Error::other("Unsupported shell"));
         }
     }
     Ok(())

@@ -44,6 +44,14 @@ enum Command {
         /// Value to place into that key
         value: Option<String>,
     },
+    /// Print the environment variables
+    Print {
+        /// Name of the environment to print
+        name: String,
+        /// Whether to print also dependencies
+        #[clap(short, long)]
+        dependencies: bool,
+    },
 }
 
 fn main() {
@@ -72,10 +80,7 @@ fn main() {
             return;
         }
         Some(Command::List) => {
-            let config = Config::new(&context).unwrap_or_else(|e| {
-                eprintln!("{}: {}", "error:".error(), e);
-                std::process::exit(1);
-            });
+            let config = get_config(&context);
             config.list().iter().for_each(|env| {
                 println!("{}", env);
             });
@@ -91,14 +96,17 @@ fn main() {
             }
             return;
         }
+        Some(Command::Print { name, dependencies }) => {
+            let config = get_config(&context);
+            config.display_env(&name, dependencies).unwrap_or_else(|e| {
+                eprintln!("{}: {}", "warning:".warning(), e);
+                std::process::exit(1);
+            });
+            return;
+        }
         None => {}
     }
 
-    let context = Context::new();
-    if context.os == OperatingSystem::Unknown {
-        eprintln!("{}: Unsupported operating system", "error:".error());
-        std::process::exit(1);
-    }
     if context.shell == Shell::Unknown {
         eprintln!(
             "{}: Unknown shell, make sure to initialize use first (see documentation)",
@@ -107,20 +115,30 @@ fn main() {
         std::process::exit(1);
     }
 
-    let settings = Settings::new();
     let shell_printer = create_shell_printer(&context);
     let config = Config::new(&context).unwrap_or_else(|e| {
-        show_error(&e, shell_printer.as_ref());
+        let error = format!("{}: {}", "error:".error(), e);
+        println!("{}", shell_printer.echo(&error));
         std::process::exit(1);
     });
 
+    let settings = Settings::new();
+
     let env_name = args.name.expect("can't unwrap environment name");
     config
-        .use_env(&env_name, &settings, shell_printer.as_ref())
+        .print_env(&env_name, &settings, shell_printer.as_ref())
         .unwrap_or_else(|e| {
-            show_error(&e, shell_printer.as_ref());
+            let warning = format!("{}: {}", "warning:".warning(), e);
+            println!("{}", shell_printer.echo(&warning));
             std::process::exit(1);
         });
+}
+
+fn get_config(context: &Context) -> Config {
+    Config::new(context).unwrap_or_else(|e| {
+        eprintln!("{}: {}", "error:".error(), e);
+        std::process::exit(1);
+    })
 }
 
 fn create_shell_printer(context: &Context) -> Box<dyn ShellPrinter> {
@@ -129,9 +147,4 @@ fn create_shell_printer(context: &Context) -> Box<dyn ShellPrinter> {
         Shell::Cmd => Box::new(CmdPrinter {}),
         Shell::Unknown => panic!("Unsupported shell"),
     }
-}
-
-fn show_error(message: &str, shell_printer: &dyn ShellPrinter) {
-    let error = format!("{}: {}", "error:".error(), message);
-    println!("{}", shell_printer.echo(&error));
 }

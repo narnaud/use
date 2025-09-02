@@ -79,7 +79,7 @@ local function use_filter(line)
     end
 
     -- Check for any flags
-    if param == "" or param:match("^[-|init|list|set|help]") then
+    if param == "" or param:match("^[-|init|list|set|help|print]") then
         os.execute(::USE:: .. " " .. param)
         return "", false
     else
@@ -108,5 +108,5 @@ os.setenv('USE_SHELL', 'cmd')
 -- Set current shell
 clink.argmatcher(table.unpack(string.explode(use_commands or "use")))
 :addarg(list_envs())
-:addflags("--help", "-h", "--version", "-V")
+:addflags("--help", "-h", "--version", "-V", "--dependencies", "-d")
 :nofiles()

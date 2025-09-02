@@ -142,8 +142,8 @@ impl Environment {
             }
         }
 
-        if let Some(path_vec) = &self.global.path {
-            for path in path_vec {
+        if let Some(paths) = &self.global.path {
+            for path in paths {
                 println!("{}", printer.prepend_path(path));
             }
         }
@@ -163,6 +163,41 @@ impl Environment {
 
         // Set the USE_PROMPT environment variable
         println!("{}", printer.set("USE_PROMPT", self.name.as_str()));
+    }
+
+    /// Display the environment
+    pub fn display(&self) {
+        println!(
+            "🗲 {}: {}",
+            self.name.as_str().success(),
+            self.global.display.as_deref().unwrap_or("").info()
+        );
+        if let Some(set) = &self.global.set {
+            for (key, value) in set {
+                println!("{} = {}", key, value);
+            }
+        }
+        if let Some(append) = &self.global.append {
+            for (key, value) in append {
+                println!("{} += {}", key, value);
+            }
+        }
+        if let Some(prepend) = &self.global.prepend {
+            for (key, value) in prepend {
+                println!("{} += {}", key, value);
+            }
+        }
+        if let Some(paths) = &self.global.path {
+            for path in paths {
+                println!("PATH += {}", path);
+            }
+        }
+        if let Some(script) = &self.global.script {
+            println!("{}\n{}{}", "```".info(), script, "```".info());
+        }
+        if let Some(go) = &self.global.go {
+            println!("-> {}", go.as_str().info());
+        }
     }
 }
 
@@ -192,8 +227,8 @@ impl Config {
             .collect()
     }
 
-    /// Get the environment by its name, or return an error if not found
-    pub fn use_env(
+    /// Print the environment variables for the specified environment
+    pub fn print_env(
         &self,
         name: &str,
         settings: &Settings,
@@ -209,6 +244,29 @@ impl Config {
         if settings.update_title {
             shell_printer.change_title(name);
         }
+
+        Ok(())
+    }
+
+    /// Display the environment variables for the specified environment
+    pub fn display_env(&self, name: &str, with_dependencies: bool) -> Result<(), String> {
+        // Find the name of all environments needed to be used
+        let envs = if with_dependencies {
+            resolve_dependencies(name, &self.environments)?
+        } else {
+            vec![self
+                .environments
+                .iter()
+                .find(|env| env.name == name || env.name.starts_with(name))
+                .ok_or_else(|| format!("Environment {} not found", name))?]
+        };
+
+        for env in envs.iter().rev() {
+            env.display();
+        }
+
+        // Add an empty line
+        println!();
 
         Ok(())
     }

@@ -1,4 +1,3 @@
-
 # Use - 🚀 Setting up development environment easily
 
 **Use** is a command line tool to setup environment defined in a json file. The syntax is easy enough to be able to handle setup with multiple environment variables and secondary scripts.

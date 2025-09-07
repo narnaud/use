@@ -28,11 +28,17 @@ struct Args {
 
 #[derive(Parser)]
 enum Command {
-    ///  Prints the shell function used for shell integration
+    /// Prints the shell function used for shell integration
     Init {
         shell: Shell,
         #[clap(long)]
         print_full_init: bool,
+    },
+    /// Handles the configuration file
+    Config {
+        /// Create a new configuration file if it doesn't exist
+        #[clap(long)]
+        create: bool,
     },
     /// List all environments
     List,
@@ -76,6 +82,25 @@ fn main() {
                 init::init_main(shell).expect("can't init_main");
             } else {
                 init::init_stub(shell).expect("can't init_stub");
+            }
+            return;
+        }
+        Some(Command::Config { create }) => {
+            if create {
+                context.create_config_file().unwrap_or_else(|e| {
+                    eprintln!("{}: {}", "error:".error(), e);
+                    std::process::exit(1);
+                });
+                println!(
+                    "{} creating the default configuration file at {}",
+                    "     Finished".success(),
+                    context.config_path.display()
+                );
+            } else {
+                context.edit_config_file().unwrap_or_else(|e| {
+                    eprintln!("{}: {}", "error:".error(), e);
+                    std::process::exit(1);
+                });
             }
             return;
         }

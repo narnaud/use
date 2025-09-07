@@ -253,7 +253,11 @@ impl Config {
 
         // All good, just show a small message
         let env = envs.first().unwrap();
-        let text = format!("{} setting up {}", "    Finished".success(), env.env_name().info());
+        let text = format!(
+            "{} setting up {}",
+            "    Finished".success(),
+            env.env_name().info()
+        );
         println!("{}", shell_printer.echo(&text));
 
         Ok(())

@@ -330,6 +330,25 @@ pub fn read_config_file(
     let file = fs::File::open(file_path)?;
     let reader = BufReader::new(file);
     let env_hash: HashMap<String, Environment> = serde_yaml::from_reader(reader)?;
+    create_env_vector(context, env_hash)
+}
+
+/// Read the config file from a string
+/// This is used for testing purposes
+#[cfg(test)]
+pub fn read_config_from_string(
+    content: &str,
+    context: &Context,
+) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
+    let env_hash: HashMap<String, Environment> = serde_yaml::from_str(content)?;
+    create_env_vector(context, env_hash)
+}
+
+/// Create a vector of environments from the given hash map
+fn create_env_vector(
+    context: &Context,
+    env_hash: HashMap<String, Environment>,
+) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
     let mut envs = Vec::new();
     for (name, mut env) in env_hash {
         env.name = name;
@@ -424,10 +443,10 @@ fn create_pattern_envs(env: &Environment) -> Vec<Environment> {
 
 #[cfg(test)]
 mod tests {
-    use crate::context::OperatingSystem;
-    use std::ffi::OsString;
-
     use super::*;
+    use crate::context::{Context, OperatingSystem};
+    use crate::Shell;
+    use std::ffi::OsString;
 
     #[test]
     fn test_replace_placeholders() {
@@ -612,5 +631,45 @@ mod tests {
 
         // Shell-specific properties should be consumed
         assert!(env.for_cmd.is_none());
+    }
+
+    #[test]
+    fn test_resolve_dependencies_from_yaml() {
+        // Write a sample config.yaml with dependencies
+        let yaml = r#"
+envA:
+  display: "Environment A"
+  set:
+    VAR_A: "A"
+  use:
+    - envB
+envB:
+  display: "Environment B"
+  set:
+    VAR_B: "B"
+envC:
+  display: "Environment C"
+  set:
+    VAR_C: "C"
+"#;
+
+        // Create a context
+        let context = Context {
+            os: OperatingSystem::Windows,
+            shell: Shell::Cmd,
+            config_path: OsString::new(),
+        };
+
+        // Read environments from the config file
+        let envs = read_config_from_string(yaml, &context).unwrap();
+
+        // Resolve dependencies for envA
+        let resolved = resolve_dependencies("envA", &envs).unwrap();
+
+        // Should contain envA and envB
+        let names: Vec<_> = resolved.iter().map(|e| e.name.as_str()).collect();
+        assert!(names[0] == "envA");
+        assert!(names[1] == "envB");
+        assert_eq!(names.len(), 2);
     }
 }

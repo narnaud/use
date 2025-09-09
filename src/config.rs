@@ -107,8 +107,12 @@ impl Environment {
             (&mut self.global.append, &shell_env.append),
             (&mut self.global.prepend, &shell_env.prepend),
         ] {
-            if let (Some(map), Some(other_map)) = (field, other_field) {
-                map.extend(other_map.clone());
+            if let Some(other_map) = other_field {
+                if let Some(map) = field {
+                    map.extend(other_map.clone());
+                } else {
+                    *field = Some(other_map.clone());
+                }
             }
         }
 
@@ -116,8 +120,12 @@ impl Environment {
             (&mut self.global.path, &shell_env.path),
             (&mut self.global.reuse, &shell_env.reuse),
         ] {
-            if let (Some(vec), Some(other_vec)) = (field, other_field) {
-                vec.extend(other_vec.clone());
+            if let Some(other_vec) = other_field {
+                if let Some(vec) = field {
+                    vec.extend(other_vec.clone());
+                } else {
+                    *field = Some(other_vec.clone());
+                }
             }
         }
     }
@@ -412,4 +420,197 @@ fn create_pattern_envs(env: &Environment) -> Vec<Environment> {
     }
 
     pattern_envs
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::context::OperatingSystem;
+    use std::ffi::OsString;
+
+    use super::*;
+
+    #[test]
+    fn test_replace_placeholders() {
+        let mut env = Environment {
+            name: "test-{}".to_string(),
+            context: None,
+            pattern: None,
+            global: CommonProperties {
+                display: Some("Display {}".to_string()),
+                script: Some("echo {}".to_string()),
+                set: Some(HashMap::from([("KEY".to_string(), "value-{}".to_string())])),
+                append: Some(HashMap::from([(
+                    "APPEND".to_string(),
+                    "append-{}".to_string(),
+                )])),
+                prepend: Some(HashMap::from([(
+                    "PREPEND".to_string(),
+                    "prepend-{}".to_string(),
+                )])),
+                path: Some(vec!["path/to/{}".to_string()]),
+                reuse: None,
+                go: Some("go-to-{}".to_string()),
+            },
+            for_cmd: None,
+            for_powershell: None,
+            version: None,
+            original_name: None,
+        };
+
+        env.replace_placeholders("123");
+
+        assert_eq!(env.name, "test-123");
+        assert_eq!(env.global.display, Some("Display 123".to_string()));
+        assert_eq!(env.global.script, Some("echo 123".to_string()));
+        assert_eq!(
+            env.global.set,
+            Some(HashMap::from([(
+                "KEY".to_string(),
+                "value-123".to_string()
+            )]))
+        );
+        assert_eq!(
+            env.global.append,
+            Some(HashMap::from([(
+                "APPEND".to_string(),
+                "append-123".to_string()
+            )]))
+        );
+        assert_eq!(
+            env.global.prepend,
+            Some(HashMap::from([(
+                "PREPEND".to_string(),
+                "prepend-123".to_string()
+            )]))
+        );
+        assert_eq!(env.global.path, Some(vec!["path/to/123".to_string()]));
+        assert_eq!(env.global.go, Some("go-to-123".to_string()));
+    }
+
+    #[test]
+    fn test_replace_placeholders_multiple_occurrences() {
+        let mut env = Environment {
+            name: "test-{}-{}".to_string(),
+            context: None,
+            pattern: None,
+            global: CommonProperties {
+                display: Some("Display {} multiple {}".to_string()),
+                script: Some("echo {} twice {}".to_string()),
+                set: None,
+                append: None,
+                prepend: None,
+                path: None,
+                reuse: None,
+                go: None,
+            },
+            for_cmd: None,
+            for_powershell: None,
+            version: None,
+            original_name: None,
+        };
+
+        env.replace_placeholders("123");
+        env.replace_placeholders("456");
+
+        // Only the first occurrence should be replaced
+        assert_eq!(env.name, "test-123-456");
+        assert_eq!(
+            env.global.display,
+            Some("Display 123 multiple 456".to_string())
+        );
+        assert_eq!(env.global.script, Some("echo 123 twice 456".to_string()));
+    }
+
+    #[test]
+    fn test_fold_with_cmd_shell() {
+        let mut env = Environment {
+            name: "test".to_string(),
+            context: None,
+            pattern: None,
+            global: CommonProperties {
+                display: Some("Global Display".to_string()),
+                script: None,
+                set: Some(HashMap::from([(
+                    "GLOBAL_KEY".to_string(),
+                    "global_value".to_string(),
+                )])),
+                append: Some(HashMap::from([(
+                    "GLOBAL_APPEND".to_string(),
+                    "global_append".to_string(),
+                )])),
+                prepend: None,
+                path: Some(vec!["global/path".to_string()]),
+                reuse: Some(vec!["global_reuse".to_string()]),
+                go: None,
+            },
+            for_cmd: Some(CommonProperties {
+                display: Some("CMD Display".to_string()),
+                script: Some("cmd.exe /c echo test".to_string()),
+                set: Some(HashMap::from([
+                    ("CMD_KEY".to_string(), "cmd_value".to_string()),
+                    ("GLOBAL_KEY".to_string(), "cmd_override".to_string()),
+                ])),
+                append: None,
+                prepend: Some(HashMap::from([(
+                    "CMD_PREPEND".to_string(),
+                    "cmd_prepend".to_string(),
+                )])),
+                path: Some(vec!["cmd/path".to_string()]),
+                reuse: Some(vec!["cmd_reuse".to_string()]),
+                go: Some("cmd_go".to_string()),
+            }),
+            for_powershell: None,
+            version: None,
+            original_name: None,
+        };
+
+        let context = Context {
+            os: OperatingSystem::Windows,
+            shell: Shell::Cmd,
+            config_path: OsString::new(),
+        };
+
+        env.fold(&context);
+
+        // CMD specific properties should override global ones
+        assert_eq!(env.global.display, Some("CMD Display".to_string()));
+        assert_eq!(env.global.script, Some("cmd.exe /c echo test".to_string()));
+        assert_eq!(env.global.go, Some("cmd_go".to_string()));
+
+        // Maps should be merged
+        assert_eq!(
+            env.global.set,
+            Some(HashMap::from([
+                ("GLOBAL_KEY".to_string(), "cmd_override".to_string()),
+                ("CMD_KEY".to_string(), "cmd_value".to_string()),
+            ]))
+        );
+        assert_eq!(
+            env.global.append,
+            Some(HashMap::from([(
+                "GLOBAL_APPEND".to_string(),
+                "global_append".to_string()
+            )]))
+        );
+        assert_eq!(
+            env.global.prepend,
+            Some(HashMap::from([(
+                "CMD_PREPEND".to_string(),
+                "cmd_prepend".to_string()
+            )]))
+        );
+
+        // Vectors should be extended
+        assert_eq!(
+            env.global.path,
+            Some(vec!["global/path".to_string(), "cmd/path".to_string()])
+        );
+        assert_eq!(
+            env.global.reuse,
+            Some(vec!["global_reuse".to_string(), "cmd_reuse".to_string()])
+        );
+
+        // Shell-specific properties should be consumed
+        assert!(env.for_cmd.is_none());
+    }
 }

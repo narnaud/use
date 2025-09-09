@@ -31,7 +31,7 @@ impl ShellPrinter for CmdPrinter {
         format!("TITLE {}", title)
     }
 
-    // fn env_variable(&self, env: &str) -> String {
-    //     format!("%{}%", env)
-    // }
+    fn env_variable(&self, env: &str) -> String {
+        format!("%{}%", env)
+    }
 }

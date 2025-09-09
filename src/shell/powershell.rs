@@ -31,7 +31,7 @@ impl ShellPrinter for PowershellPrinter {
         format!("$host.ui.RawUI.WindowTitle = '{}'", title)
     }
 
-    // fn env_variable(&self, env: &str) -> String {
-    //     format!("$env:{}", env)
-    // }
+    fn env_variable(&self, env: &str) -> String {
+        format!("$env:{}", env)
+    }
 }

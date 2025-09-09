@@ -13,8 +13,9 @@ pub trait ShellPrinter {
 
     fn change_title(&self, title: &str) -> String;
 
-    // For later
-    // fn env_variable(&self, env: &str) -> String;
+    /// Return the shell-specific syntax for referencing an environment variable name.
+    /// Example: "PATH" -> "%PATH%" for cmd, "$env:PATH" for PowerShell
+    fn env_variable(&self, env: &str) -> String;
 }
 
 mod cmd;

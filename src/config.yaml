@@ -45,6 +45,6 @@ qt{}:
   set:
     QTDIR: C:\Qt\{}\msvc2022_64\
   append:
-    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
+    CMAKE_PREFIX_PATH: ${QTDIR}
   path:
-    - C:\Qt\{}\msvc2022_64\bin
+    - ${QTDIR}\bin

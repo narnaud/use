@@ -58,6 +58,17 @@ pub struct Environment {
 }
 
 impl Environment {
+    /// Replace ${VAR} placeholders with shell-specific environment variable syntax
+    fn substitute_env_vars(value: &str, printer: &dyn ShellPrinter) -> String {
+        // Match ${VAR_NAME}
+        let re = Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap();
+        re.replace_all(value, |caps: &regex::Captures| {
+            let var_name = &caps[1];
+            printer.env_variable(var_name)
+        })
+        .to_string()
+    }
+
     /// Replace placeholders in the environment configuration when using a pattern
     fn replace_placeholders(&mut self, value: &str) {
         let replace = |s: &mut Option<String>| {
@@ -145,34 +156,40 @@ impl Environment {
 
         if let Some(set) = &self.global.set {
             for (key, value) in set {
-                println!("{}", printer.set(key, value));
+                let v = Self::substitute_env_vars(value, printer);
+                println!("{}", printer.set(key, &v));
             }
         }
 
         if let Some(append) = &self.global.append {
             for (key, value) in append {
-                println!("{}", printer.append(key, value));
+                let v = Self::substitute_env_vars(value, printer);
+                println!("{}", printer.append(key, &v));
             }
         }
 
         if let Some(prepend) = &self.global.prepend {
             for (key, value) in prepend {
-                println!("{}", printer.prepend(key, value));
+                let v = Self::substitute_env_vars(value, printer);
+                println!("{}", printer.prepend(key, &v));
             }
         }
 
         if let Some(paths) = &self.global.path {
             for path in paths {
-                println!("{}", printer.prepend_path(path));
+                let p = Self::substitute_env_vars(path, printer);
+                println!("{}", printer.prepend_path(&p));
             }
         }
 
         if let Some(script) = &self.global.script {
-            println!("{}", printer.run(script));
+            let s = Self::substitute_env_vars(script, printer);
+            println!("{}", printer.run(&s));
         }
 
         if let Some(go) = &self.global.go {
-            println!("{}", printer.go(go));
+            let g = Self::substitute_env_vars(go, printer);
+            println!("{}", printer.go(&g));
         }
 
         // Set the USE_PROMPT environment variable

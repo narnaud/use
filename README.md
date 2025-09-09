@@ -89,9 +89,6 @@ example:
     - other
     - configuration
     - names
-  script: |
-    echo "Something"
-    echo "Something else"
   set:
     EXAMPLE_VAR: example value
     EXAMPLE_VAR_OTHER: other value
@@ -104,6 +101,9 @@ example:
   path:
     - C:\example\path\to\add\to\path
     - C:\example\other\path\to\add\to\path
+  script: |
+    echo "Something"
+    echo "Something else"
   go: C:\example\path\to\go\to
 
 # Visual Studio 2022 x64
@@ -127,20 +127,20 @@ qt{}:
   set:
     QTDIR: C:\Qt\{}\msvc2022_64\
   append:
-    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
+    CMAKE_PREFIX_PATH: ${QTDIR}
   path:
-    - C:\Qt\{}\msvc2022_64\bin
+    - ${QTDIR}\bin
 ```
 
 The YAML file is a map of environments, the key being used as the environment name when running the command. For each environment, you can have:
 
 - `display`: string displayed when setting the environment
 - `use`: reuse existing environment (they will be setup before)
-- `script`: raw lines to call as a script
 - `set`: list of environment variables to initialize
 - `append`: append values to environment variables
 - `prepend`: prepend values to environment variables
 - `path`: add paths to the `PATH` environment variable
+- `script`: raw lines to call as a script
 - `go`: go to a particular directory at the end of the setup
 - `pattern`: use pattern matching to create multiple environments with one definition (see below)
 
@@ -186,9 +186,9 @@ qt{}:
   set:
     QTDIR: C:\Qt\{}\msvc2022_64\
   append:
-    CMAKE_PREFIX_PATH: C:\Qt\{}\msvc2022_64\
+    CMAKE_PREFIX_PATH: ${QTDIR}
   path:
-    - C:\Qt\{}\msvc2022_64\bin
+    - ${QTDIR}\bin
 ```
 
 The interesting part is the `pattern` key:
@@ -220,6 +220,31 @@ example:
   use:
     - qt6
 ```
+
+### Environement variables
+
+It's possible to use environment variables as part of the value of a field. The syntax for that is `${ENV_VARIABLE}`.
+It will be replaced by the current shell way of handling environement variables, for example `%ENV_VARIABLE%` on cmd, and `$env:ENV_VARIABLE` on powershell.
+
+For example, the `qt` environment reuse `QTDIR` in other variables:
+
+```yaml
+  set:
+    QTDIR: C:\Qt\{}\msvc2022_64\
+  append:
+    CMAKE_PREFIX_PATH: ${QTDIR}
+  path:
+    - ${QTDIR}\bin
+```
+
+It's important to note the order in which the different values are set, and there are no particular orders inside set, append and prepend.
+
+1. set
+2. append
+3. prepend
+4. path
+5. script
+6. go
 
 ## Shell integration
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/narnaud/use/compare/v1.0.0...v1.1.0) (2025-09-09)
+
+
+### Features
+
+* Add config file handling ([99b0440](https://github.com/narnaud/use/commit/99b044071352ffdfdf0ac1f20dbde2bdb5d3d08f))
+* Add finished line to the output ([facf312](https://github.com/narnaud/use/commit/facf312e8c88e025442582a34941b42f3e14f3fa))
+* Add print command ([8e2a7bc](https://github.com/narnaud/use/commit/8e2a7bceb9cd5a02e74271256743c3a9d48ca735))
+
+
+### Bug Fixes
+
+* Fix some rust clippy issues ([fc2ef8f](https://github.com/narnaud/use/commit/fc2ef8fe663e1edde30bdef0134678abc630c3c1))
+* fold environment with a specific shell ([21ea69d](https://github.com/narnaud/use/commit/21ea69d62ed9584f838403094d628e90f4dcdb06))
+
 ## [1.0.0](https://github.com/narnaud/use/compare/v0.3.2...v1.0.0) (2025-08-23)
 
 

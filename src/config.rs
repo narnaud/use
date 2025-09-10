@@ -268,7 +268,7 @@ impl Config {
         // Find the name of all environments needed to be used
         let envs = resolve_dependencies(name, &self.environments)?;
 
-        for env in envs.iter().rev() {
+        for env in envs.iter() {
             env.print(shell_printer);
         }
 
@@ -301,7 +301,7 @@ impl Config {
                 .ok_or_else(|| format!("Environment {} not found", name))?]
         };
 
-        for env in envs.iter().rev() {
+        for env in envs.iter() {
             env.display();
         }
 
@@ -323,7 +323,7 @@ fn resolve_dependencies<'a>(
     }
     let env = env.unwrap();
     // Create a vector with env
-    let mut current_envs = vec![env];
+    let mut current_envs = vec![];
 
     if let Some(reuse) = &env.global.reuse {
         for env_name in reuse {
@@ -335,6 +335,7 @@ fn resolve_dependencies<'a>(
             });
         }
     }
+    current_envs.push(env);
     Ok(current_envs)
 }
 
@@ -685,8 +686,8 @@ envC:
 
         // Should contain envA and envB
         let names: Vec<_> = resolved.iter().map(|e| e.name.as_str()).collect();
-        assert!(names[0] == "envA");
-        assert!(names[1] == "envB");
+        assert!(names[0] == "envB");
+        assert!(names[1] == "envA");
         assert_eq!(names.len(), 2);
     }
 }

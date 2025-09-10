@@ -12,7 +12,7 @@ $null = New-Module use {
         )
 
         # Handle special cases: empty args, 'init', 'list', or 'set'
-        if ($Args.Count -eq 0 -or $Args[0] -in @('init', 'list', 'set', 'help', 'print') -or $Args[0] -match '^-') {
+        if ($Args.Count -eq 0 -or $Args[0] -in @('init', 'config', 'list', 'set', 'print', 'help') -or $Args[0] -match '^-') {
             & ::USE:: $Args
             return
         }

@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use semver::Version;
 use serde::Deserialize;
@@ -11,6 +12,9 @@ use crate::settings::Settings;
 use crate::shell::ShellPrinter;
 use crate::Shell;
 
+static ENV_VAR_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap());
+
 /// Struct to hold the pattern of the environment
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 struct Pattern {
@@ -19,7 +23,7 @@ struct Pattern {
 }
 
 /// Common struct for global and shell-specific configuration
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Default)]
 struct CommonProperties {
     display: Option<String>,
     script: Option<String>,
@@ -30,6 +34,39 @@ struct CommonProperties {
     #[serde(rename = "use")]
     reuse: Option<Vec<String>>,
     go: Option<String>,
+}
+
+impl CommonProperties {
+    /// Merges another CommonProperties into self.
+    fn merge(&mut self, other: Self) {
+        self.display = other.display.or(self.display.take());
+        self.script = other.script.or(self.script.take());
+        self.go = other.go.or(self.go.take());
+
+        let merge_map = |target: &mut Option<HashMap<String, String>>,
+                         source: Option<HashMap<String, String>>| {
+            if let Some(source_map) = source {
+                target
+                    .get_or_insert_with(Default::default)
+                    .extend(source_map);
+            }
+        };
+
+        merge_map(&mut self.set, other.set);
+        merge_map(&mut self.append, other.append);
+        merge_map(&mut self.prepend, other.prepend);
+
+        let merge_vec = |target: &mut Option<Vec<String>>, source: Option<Vec<String>>| {
+            if let Some(source_vec) = source {
+                target
+                    .get_or_insert_with(Default::default)
+                    .extend(source_vec);
+            }
+        };
+
+        merge_vec(&mut self.path, other.path);
+        merge_vec(&mut self.reuse, other.reuse);
+    }
 }
 
 /// Struct to hold the environment configuration
@@ -59,13 +96,11 @@ pub struct Environment {
 impl Environment {
     /// Replace ${VAR} placeholders with shell-specific environment variable syntax
     fn substitute_env_vars(value: &str, printer: &dyn ShellPrinter) -> String {
-        // Match ${VAR_NAME}
-        let re = Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap();
-        re.replace_all(value, |caps: &regex::Captures| {
-            let var_name = &caps[1];
-            printer.env_variable(var_name)
-        })
-        .to_string()
+        ENV_VAR_REGEX
+            .replace_all(value, |caps: &regex::Captures| {
+                printer.env_variable(&caps[1])
+            })
+            .into_owned()
     }
 
     /// Replace placeholders in the environment configuration when using a pattern
@@ -104,48 +139,13 @@ impl Environment {
             Shell::Unknown => panic!("Unsupported shell"),
         };
 
-        let Some(shell_env) = shell_env else {
-            return;
-        };
-
-        self.global.display = shell_env.display.clone().or(self.global.display.take());
-        self.global.script = shell_env.script.clone().or(self.global.script.take());
-        self.global.go = shell_env.go.clone().or(self.global.go.take());
-
-        for (field, other_field) in [
-            (&mut self.global.set, &shell_env.set),
-            (&mut self.global.append, &shell_env.append),
-            (&mut self.global.prepend, &shell_env.prepend),
-        ] {
-            if let Some(other_map) = other_field {
-                if let Some(map) = field {
-                    map.extend(other_map.clone());
-                } else {
-                    *field = Some(other_map.clone());
-                }
-            }
-        }
-
-        for (field, other_field) in [
-            (&mut self.global.path, &shell_env.path),
-            (&mut self.global.reuse, &shell_env.reuse),
-        ] {
-            if let Some(other_vec) = other_field {
-                if let Some(vec) = field {
-                    vec.extend(other_vec.clone());
-                } else {
-                    *field = Some(other_vec.clone());
-                }
-            }
+        if let Some(shell_props) = shell_env {
+            self.global.merge(shell_props);
         }
     }
 
     fn env_name(&self) -> &str {
-        if let Some(display) = &self.global.display {
-            display
-        } else {
-            &self.name
-        }
+        self.global.display.as_deref().unwrap_or(&self.name)
     }
 
     /// Print the environment using the provided ShellPrinter
@@ -173,8 +173,7 @@ impl Environment {
         }
 
         if let Some(script) = &self.global.script {
-            let script = &script.trim();
-            let s = Self::substitute_env_vars(script, printer);
+            let s = Self::substitute_env_vars(script.trim(), printer);
             printer.run(&s);
         }
 
@@ -225,7 +224,7 @@ impl Config {
         // Find the name of all environments needed to be used
         let envs = resolve_dependencies(name, &self.environments)?;
 
-        for env in envs.iter() {
+        for env in &envs {
             env.print(shell_printer);
         }
 
@@ -234,8 +233,9 @@ impl Config {
         }
 
         // All good, just show a small message
-        let env = envs.last().unwrap();
-        shell_printer.finalize(&env.name, env.env_name());
+        if let Some(env) = envs.last() {
+            shell_printer.finalize(&env.name, env.env_name());
+        }
         Ok(())
     }
 }
@@ -248,22 +248,19 @@ fn resolve_dependencies<'a>(
 ) -> Result<Vec<&'a Environment>, String> {
     let env = envs
         .iter()
-        .find(|env| env.name == name || env.name.starts_with(name));
-    if env.is_none() {
-        return Err(format!("Environment {} not found", name));
-    }
-    let env = env.unwrap();
-    // Create a vector with env
-    let mut current_envs = vec![];
+        .find(|env| env.name == name || env.name.starts_with(name))
+        .ok_or_else(|| format!("Environment {} not found", name))?;
+
+    let mut current_envs = Vec::new();
 
     if let Some(reuse) = &env.global.reuse {
         for env_name in reuse {
             let deps = resolve_dependencies(env_name, envs)?;
-            deps.iter().for_each(|dep| {
-                if !current_envs.contains(dep) {
+            for dep in deps {
+                if !current_envs.contains(&dep) {
                     current_envs.push(dep);
                 }
-            });
+            }
         }
     }
     current_envs.push(env);
@@ -275,7 +272,6 @@ pub fn read_config_file(
     file_path: &Path,
     context: &Context,
 ) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
-    // Deserialize the file content
     let file = fs::File::open(file_path)?;
     let reader = BufReader::new(file);
     let env_hash: HashMap<String, Environment> = serde_yaml::from_reader(reader)?;
@@ -298,21 +294,15 @@ fn create_env_vector(
     context: &Context,
     env_hash: HashMap<String, Environment>,
 ) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
-    let mut envs = Vec::new();
-    for (name, mut env) in env_hash {
-        env.name = name;
-        env.fold(context);
-        envs.push(env);
-    }
-
-    // Filter environments based on the context
-    envs.retain(|env| {
-        if let Some(env_context) = &env.context {
-            context.check(env_context)
-        } else {
-            true
-        }
-    });
+    let mut envs: Vec<Environment> = env_hash
+        .into_iter()
+        .map(|(name, mut env)| {
+            env.name = name;
+            env.fold(context);
+            env
+        })
+        .filter(|env| env.context.as_ref().is_none_or(|c| context.check(c)))
+        .collect();
 
     // Process pattern-based environments
     let pattern_envs: Vec<Environment> = envs
@@ -331,18 +321,17 @@ fn create_env_vector(
 /// Sort the environments, using the original key and version
 /// to determine the order. If the original key is the same, sort by version.
 fn sort_environments(environments: &mut [Environment]) {
-    environments.sort_by(|env_a, env_b| {
-        // Sort by version if environments have the same original key
-        if let (Some(key_a), Some(key_b)) = (&env_a.original_name, &env_b.original_name) {
+    environments.sort_by(|a, b| {
+        if let (Some(key_a), Some(key_b)) = (&a.original_name, &b.original_name) {
             if key_a == key_b {
-                if let (Some(ver_a), Some(ver_b)) = (&env_a.version, &env_b.version) {
+                if let (Some(ver_a), Some(ver_b)) = (&a.version, &b.version) {
                     if let (Ok(v_a), Ok(v_b)) = (Version::parse(ver_a), Version::parse(ver_b)) {
                         return v_b.cmp(&v_a); // Newer versions first
                     }
                 }
             }
         }
-        env_a.name.cmp(&env_b.name) // Default lexicographical sort
+        a.name.cmp(&b.name) // Default lexicographical sort
     });
 }
 
@@ -355,27 +344,27 @@ fn create_pattern_envs(env: &Environment) -> Vec<Environment> {
     };
 
     let path = PathBuf::from(&pattern.path);
-    if !path.is_dir() || !path.exists() {
+    if !path.is_dir() {
         return pattern_envs;
     }
 
-    let re = Regex::new(&pattern.regex);
-    if re.is_err() {
-        return pattern_envs;
-    }
-    let re = re.unwrap();
+    let re = match Regex::new(&pattern.regex) {
+        Ok(r) => r,
+        Err(_) => return pattern_envs,
+    };
 
-    for entry in fs::read_dir(path)
-        .expect("Could not read directory")
-        .flatten()
-    {
+    let entries = match fs::read_dir(path) {
+        Ok(e) => e,
+        Err(_) => return pattern_envs,
+    };
+
+    for entry in entries.flatten() {
         if let Ok(name) = entry.file_name().into_string() {
             if let Some(captures) = re.captures(&name) {
                 let mut new_env = env.clone();
 
                 for capture in captures.iter().skip(1).flatten() {
-                    let value = capture.as_str();
-                    new_env.replace_placeholders(value);
+                    new_env.replace_placeholders(capture.as_str());
                 }
 
                 new_env.version = captures.get(1).map(|m| m.as_str().to_string());
@@ -393,13 +382,12 @@ fn create_pattern_envs(env: &Environment) -> Vec<Environment> {
 /// Check dependencies in the environment hashmap and return a vector of (key, value) tuples
 fn check_env_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, String)> {
     use std::collections::HashSet;
-    let re = Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap();
 
-    // Build dependency graph with owned Strings
+    // Build dependency graph
     let mut deps: HashMap<String, HashSet<String>> = HashMap::new();
     for (key, value) in env_map.iter() {
         let mut set = HashSet::new();
-        for cap in re.captures_iter(value) {
+        for cap in ENV_VAR_REGEX.captures_iter(value) {
             let dep = cap[1].to_string();
             if env_map.contains_key(&dep) {
                 set.insert(dep);
@@ -419,10 +407,9 @@ fn check_env_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, Str
         visited: &mut HashSet<String>,
         result: &mut Vec<(String, String)>,
     ) {
-        if visited.contains(key) {
+        if !visited.insert(key.to_string()) {
             return;
         }
-        visited.insert(key.to_string());
         if let Some(dep_set) = deps.get(key) {
             for dep in dep_set {
                 visit(dep, env_map, deps, visited, result);
@@ -433,7 +420,10 @@ fn check_env_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, Str
         }
     }
 
-    for key in env_map.keys() {
+    let mut keys: Vec<_> = env_map.keys().collect();
+    keys.sort(); // for deterministic order
+
+    for key in keys {
         visit(key, env_map, &deps, &mut visited, &mut result);
     }
 
@@ -457,10 +447,8 @@ mod tests {
         env_map.insert("KEY4".to_string(), "foo/${KEY3}".to_string());
 
         let ordered = check_env_dependencies(&env_map);
-        assert_eq!(ordered[0].0, "KEY2");
-        assert_eq!(ordered[1].0, "KEY3");
-        assert_eq!(ordered[2].0, "KEY4");
-        assert_eq!(ordered[3].0, "KEY1");
+        let ordered_keys: Vec<_> = ordered.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(ordered_keys, vec!["KEY2", "KEY3", "KEY4", "KEY1"]);
     }
 
     #[test]
@@ -475,9 +463,8 @@ mod tests {
         env_map.insert("KEY3".to_string(), "foo/${KEY2}/${EXTERNAL}".to_string());
 
         let ordered = check_env_dependencies(&env_map);
-        assert_eq!(ordered[0].0, "KEY2");
-        assert_eq!(ordered[1].0, "KEY3");
-        assert_eq!(ordered[2].0, "KEY1");
+        let ordered_keys: Vec<_> = ordered.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(ordered_keys, vec!["KEY2", "KEY3", "KEY1"]);
     }
 
     #[test]
@@ -717,8 +704,6 @@ envC:
 
         // Should contain envA and envB
         let names: Vec<_> = resolved.iter().map(|e| e.name.as_str()).collect();
-        assert!(names[0] == "envB");
-        assert!(names[1] == "envA");
-        assert_eq!(names.len(), 2);
+        assert_eq!(names, vec!["envB", "envA"]);
     }
 }

@@ -66,67 +66,78 @@ fn main() {
 
     let mut args = Args::parse();
 
+    // Default to `list` command if no arguments are provided
     if args.name.is_none() && args.command.is_none() {
         args.command = Some(Command::List);
     }
 
-    let mut printing = false;
-    match args.command {
-        Some(Command::Init {
-            shell,
-            print_full_init,
-        }) => {
-            if print_full_init {
-                init::init_main(shell).expect("can't init_main");
-            } else {
-                init::init_stub(shell).expect("can't init_stub");
-            }
-            return;
+    if let Some(command) = args.command {
+        match command {
+            Command::Init {
+                shell,
+                print_full_init,
+            } => handle_init(shell, print_full_init),
+            Command::Config { create } => handle_config(&context, create),
+            Command::List => handle_list(&context),
+            Command::Set { key, value } => handle_set(key, value),
+            Command::Print { name } => handle_use(&context, name, true),
         }
-        Some(Command::Config { create }) => {
-            if create {
-                context.create_config_file().unwrap_or_else(|e| {
-                    eprintln!("{}: {}", "error:".error(), e);
-                    std::process::exit(1);
-                });
-                println!(
-                    "{} creating the default configuration file at {}",
-                    "     Finished".success(),
-                    context.config_path.display()
-                );
-            } else {
-                context.edit_config_file().unwrap_or_else(|e| {
-                    eprintln!("{}: {}", "error:".error(), e);
-                    std::process::exit(1);
-                });
-            }
-            return;
-        }
-        Some(Command::List) => {
-            let config = get_config(&context);
-            config.list().iter().for_each(|env| {
-                println!("{}", env);
-            });
-            return;
-        }
-        Some(Command::Set { key, value }) => {
-            if let Some(key) = key {
-                if let Some(value) = value {
-                    Settings::set(key, &value);
-                }
-            } else {
-                Settings::print();
-            }
-            return;
-        }
-        Some(Command::Print { name }) => {
-            printing = true;
-            args.name = Some(name);
-        }
-        None => {}
+    } else if let Some(name) = args.name {
+        handle_use(&context, name, false);
     }
+}
 
-    if context.shell == Shell::Unknown {
+fn handle_init(shell: Shell, print_full_init: bool) {
+    let result = if print_full_init {
+        init::init_main(shell)
+    } else {
+        init::init_stub(shell)
+    };
+    result.unwrap_or_else(|e| {
+        eprintln!("{}: {}", "error:".error(), e);
+        std::process::exit(1);
+    });
+}
+
+fn handle_config(context: &Context, create: bool) {
+    let result = if create {
+        context.create_config_file().map(|_| {
+            println!(
+                "{} creating the default configuration file at {}",
+                "     Finished".success(),
+                context.config_path.display()
+            );
+        })
+    } else {
+        context.edit_config_file()
+    };
+    result.unwrap_or_else(|e| {
+        eprintln!("{}: {}", "error:".error(), e);
+        std::process::exit(1);
+    });
+}
+
+fn handle_list(context: &Context) {
+    let config = Config::new(context).unwrap_or_else(|e| {
+        eprintln!("{}: {}", "error:".error(), e);
+        std::process::exit(1);
+    });
+
+    config.list().iter().for_each(|env| {
+        println!("{}", env);
+    });
+}
+
+fn handle_set(key: Option<SettingsKey>, value: Option<String>) {
+    if let (Some(key), Some(value)) = (key, value) {
+        Settings::set(key, &value);
+    } else {
+        Settings::print();
+    }
+}
+
+fn handle_use(context: &Context, name: String, printing: bool) {
+    if !printing && context.shell == Shell::Unknown {
         eprintln!(
             "{}: Unknown shell, make sure to initialize use first (see documentation)",
             "error:".error()
@@ -135,11 +146,12 @@ fn main() {
     }
 
     let shell_printer = if printing {
-        Box::new(DebugPrinter {})
+        Box::new(DebugPrinter {}) as Box<dyn ShellPrinter>
     } else {
-        create_shell_printer(&context)
+        create_shell_printer(context)
     };
-    let config = Config::new(&context).unwrap_or_else(|e| {
+
+    let config = Config::new(context).unwrap_or_else(|e| {
         let error = format!("{}: {}", "error:".error(), e);
         shell_printer.echo(&error);
         std::process::exit(1);
@@ -147,21 +159,13 @@ fn main() {
 
     let settings = Settings::new();
 
-    let env_name = args.name.expect("can't unwrap environment name");
     config
-        .print_env(&env_name, &settings, shell_printer.as_ref())
+        .print_env(&name, &settings, shell_printer.as_ref())
         .unwrap_or_else(|e| {
             let warning = format!("{}: {}", "warning:".warning(), e);
             shell_printer.echo(&warning);
             std::process::exit(1);
         });
-}
-
-fn get_config(context: &Context) -> Config {
-    Config::new(context).unwrap_or_else(|e| {
-        eprintln!("{}: {}", "error:".error(), e);
-        std::process::exit(1);
-    })
 }
 
 fn create_shell_printer(context: &Context) -> Box<dyn ShellPrinter> {

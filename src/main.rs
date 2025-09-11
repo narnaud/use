@@ -54,9 +54,6 @@ enum Command {
     Print {
         /// Name of the environment to print
         name: String,
-        /// Whether to print also dependencies
-        #[clap(short, long)]
-        dependencies: bool,
     },
 }
 
@@ -73,6 +70,7 @@ fn main() {
         args.command = Some(Command::List);
     }
 
+    let mut printing = false;
     match args.command {
         Some(Command::Init {
             shell,
@@ -121,13 +119,9 @@ fn main() {
             }
             return;
         }
-        Some(Command::Print { name, dependencies }) => {
-            let config = get_config(&context);
-            config.display_env(&name, dependencies).unwrap_or_else(|e| {
-                eprintln!("{}: {}", "warning:".warning(), e);
-                std::process::exit(1);
-            });
-            return;
+        Some(Command::Print { name }) => {
+            printing = true;
+            args.name = Some(name);
         }
         None => {}
     }
@@ -140,10 +134,14 @@ fn main() {
         std::process::exit(1);
     }
 
-    let shell_printer = create_shell_printer(&context);
+    let shell_printer = if printing {
+        Box::new(DebugPrinter {})
+    } else {
+        create_shell_printer(&context)
+    };
     let config = Config::new(&context).unwrap_or_else(|e| {
         let error = format!("{}: {}", "error:".error(), e);
-        println!("{}", shell_printer.echo(&error));
+        shell_printer.echo(&error);
         std::process::exit(1);
     });
 
@@ -154,7 +152,7 @@ fn main() {
         .print_env(&env_name, &settings, shell_printer.as_ref())
         .unwrap_or_else(|e| {
             let warning = format!("{}: {}", "warning:".warning(), e);
-            println!("{}", shell_printer.echo(&warning));
+            shell_printer.echo(&warning);
             std::process::exit(1);
         });
 }

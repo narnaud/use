@@ -109,5 +109,5 @@ os.setenv('USE_SHELL', 'cmd')
 -- Set current shell
 clink.argmatcher(table.unpack(string.explode(use_commands or "use")))
 :addarg(list_envs())
-:addflags("--help", "-h", "--version", "-V", "--dependencies", "-d", "--create")
+:addflags("--help", "-h", "--version", "-V", "--create")
 :nofiles()

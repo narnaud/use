@@ -6,7 +6,6 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use crate::colorize::Colorize;
 use crate::context::Context;
 use crate::settings::Settings;
 use crate::shell::ShellPrinter;
@@ -151,84 +150,50 @@ impl Environment {
 
     /// Print the environment using the provided ShellPrinter
     pub fn print(&self, printer: &dyn ShellPrinter) {
-        let text = format!("{} {}", " Configuring".success(), self.env_name());
-        println!("{}", printer.echo(&text));
+        printer.start(&self.name, self.env_name());
 
         if let Some(set) = &self.global.set {
             for (key, value) in set {
                 let v = Self::substitute_env_vars(value, printer);
-                println!("{}", printer.set(key, &v));
+                printer.set(key, &v);
             }
         }
 
         if let Some(append) = &self.global.append {
             for (key, value) in append {
                 let v = Self::substitute_env_vars(value, printer);
-                println!("{}", printer.append(key, &v));
+                printer.append(key, &v);
             }
         }
 
         if let Some(prepend) = &self.global.prepend {
             for (key, value) in prepend {
                 let v = Self::substitute_env_vars(value, printer);
-                println!("{}", printer.prepend(key, &v));
+                printer.prepend(key, &v);
             }
         }
 
         if let Some(paths) = &self.global.path {
             for path in paths {
                 let p = Self::substitute_env_vars(path, printer);
-                println!("{}", printer.prepend_path(&p));
+                printer.prepend_path(&p);
             }
         }
 
         if let Some(script) = &self.global.script {
+            let script = &script.trim();
             let s = Self::substitute_env_vars(script, printer);
-            println!("{}", printer.run(&s));
+            printer.run(&s);
         }
 
         if let Some(go) = &self.global.go {
             let g = Self::substitute_env_vars(go, printer);
-            println!("{}", printer.go(&g));
+            printer.go(&g);
         }
 
         // Set the USE_PROMPT environment variable
-        println!("{}", printer.set("USE_PROMPT", self.name.as_str()));
-    }
-
-    /// Display the environment
-    pub fn display(&self) {
-        println!(
-            "🗲 {}: {}",
-            self.name.as_str().success(),
-            self.global.display.as_deref().unwrap_or("").info()
-        );
-        if let Some(set) = &self.global.set {
-            for (key, value) in set {
-                println!("{} = {}", key, value);
-            }
-        }
-        if let Some(append) = &self.global.append {
-            for (key, value) in append {
-                println!("{} += {}", key, value);
-            }
-        }
-        if let Some(prepend) = &self.global.prepend {
-            for (key, value) in prepend {
-                println!("{} += {}", key, value);
-            }
-        }
-        if let Some(paths) = &self.global.path {
-            for path in paths {
-                println!("PATH += {}", path);
-            }
-        }
-        if let Some(script) = &self.global.script {
-            println!("{}\n{}{}", "```".info(), script, "```".info());
-        }
-        if let Some(go) = &self.global.go {
-            println!("-> {}", go.as_str().info());
-        }
+        printer.set("USE_PROMPT", self.name.as_str());
+        printer.finish();
     }
 }
 
@@ -277,34 +242,8 @@ impl Config {
         }
 
         // All good, just show a small message
-        let env = envs.first().unwrap();
-        let text = format!(
-            "{} setting up {}",
-            "    Finished".success(),
-            env.env_name().info()
-        );
-        println!("{}", shell_printer.echo(&text));
-
-        Ok(())
-    }
-
-    /// Display the environment variables for the specified environment
-    pub fn display_env(&self, name: &str, with_dependencies: bool) -> Result<(), String> {
-        // Find the name of all environments needed to be used
-        let envs = if with_dependencies {
-            resolve_dependencies(name, &self.environments)?
-        } else {
-            vec![self
-                .environments
-                .iter()
-                .find(|env| env.name == name || env.name.starts_with(name))
-                .ok_or_else(|| format!("Environment {} not found", name))?]
-        };
-
-        for env in envs.iter() {
-            env.display();
-        }
-
+        let env = envs.last().unwrap();
+        shell_printer.finalize(&env.name, env.env_name());
         Ok(())
     }
 }

@@ -11,7 +11,7 @@ $null = New-Module use {
             [string[]]$Args
         )
 
-        # Handle special cases: empty args, 'init', 'list', or 'set'
+        # Handle special cases: empty args or commands that should be run directly
         if ($Args.Count -eq 0 -or $Args[0] -in @('init', 'config', 'list', 'set', 'print', 'help') -or $Args[0] -match '^-') {
             & ::USE:: $Args
             return

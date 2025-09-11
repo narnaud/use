@@ -1,17 +1,36 @@
+use crate::colorize::Colorize;
 use std::str;
 
 pub trait ShellPrinter {
-    fn echo(&self, message: &str) -> String;
-    fn run(&self, script: &str) -> String {
-        script.to_string()
+    fn start(&self, _name: &str, env_name: &str) {
+        let text = format!("{} {}", " Configuring".success(), env_name);
+        self.echo(&text);
     }
-    fn set(&self, key: &str, value: &str) -> String;
-    fn append(&self, key: &str, value: &str) -> String;
-    fn prepend(&self, key: &str, value: &str) -> String;
-    fn prepend_path(&self, path: &str) -> String;
-    fn go(&self, path: &str) -> String;
+    fn finish(&self) {
+        // Do nothing by default
+    }
 
-    fn change_title(&self, title: &str) -> String;
+    fn finalize(&self, _name: &str, env_name: &str) {
+        let text = format!(
+            "{} setting up {}",
+            "    Finished".success(),
+            env_name.info()
+        );
+        self.echo(&text);
+    }
+
+    fn run(&self, script: &str) {
+        println!("{}", script);
+    }
+
+    fn echo(&self, message: &str);
+    fn set(&self, key: &str, value: &str);
+    fn append(&self, key: &str, value: &str);
+    fn prepend(&self, key: &str, value: &str);
+    fn prepend_path(&self, path: &str);
+    fn go(&self, path: &str);
+
+    fn change_title(&self, title: &str);
 
     /// Return the shell-specific syntax for referencing an environment variable name.
     /// Example: "PATH" -> "%PATH%" for cmd, "$env:PATH" for PowerShell
@@ -19,6 +38,8 @@ pub trait ShellPrinter {
 }
 
 mod cmd;
+mod debug;
 mod powershell;
 pub use cmd::CmdPrinter;
+pub use debug::DebugPrinter;
 pub use powershell::PowershellPrinter;

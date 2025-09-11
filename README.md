@@ -246,6 +246,16 @@ It's important to note the order in which the different values are set, and ther
 5. script
 6. go
 
+Please note that an algorithm tries to resolve dependencies between environment variables if needed. For example, if you have that:
+
+```yaml
+set:
+  KEY1: $(KEY2)
+  KEY2: foo
+```
+
+**use** will ensure that `KEY2` is set before `KEY1`.
+
 ## Shell integration
 
 ### Changing the terminal title

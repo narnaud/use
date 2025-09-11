@@ -152,26 +152,18 @@ impl Environment {
     pub fn print(&self, printer: &dyn ShellPrinter) {
         printer.start(&self.name, self.env_name());
 
-        if let Some(set) = &self.global.set {
-            for (key, value) in set {
-                let v = Self::substitute_env_vars(value, printer);
-                printer.set(key, &v);
+        let process_map = |map: &Option<HashMap<String, String>>, action: &dyn Fn(&str, &str)| {
+            if let Some(map) = map {
+                for (key, value) in check_env_dependencies(map) {
+                    let v = Self::substitute_env_vars(&value, printer);
+                    action(&key, &v);
+                }
             }
-        }
+        };
 
-        if let Some(append) = &self.global.append {
-            for (key, value) in append {
-                let v = Self::substitute_env_vars(value, printer);
-                printer.append(key, &v);
-            }
-        }
-
-        if let Some(prepend) = &self.global.prepend {
-            for (key, value) in prepend {
-                let v = Self::substitute_env_vars(value, printer);
-                printer.prepend(key, &v);
-            }
-        }
+        process_map(&self.global.set, &|k, v| printer.set(k, v));
+        process_map(&self.global.append, &|k, v| printer.append(k, v));
+        process_map(&self.global.prepend, &|k, v| printer.prepend(k, v));
 
         if let Some(paths) = &self.global.path {
             for path in paths {
@@ -398,12 +390,112 @@ fn create_pattern_envs(env: &Environment) -> Vec<Environment> {
     pattern_envs
 }
 
+/// Check dependencies in the environment hashmap and return a vector of (key, value) tuples
+fn check_env_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, String)> {
+    use std::collections::HashSet;
+    let re = Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap();
+
+    // Build dependency graph with owned Strings
+    let mut deps: HashMap<String, HashSet<String>> = HashMap::new();
+    for (key, value) in env_map.iter() {
+        let mut set = HashSet::new();
+        for cap in re.captures_iter(value) {
+            let dep = cap[1].to_string();
+            if env_map.contains_key(&dep) {
+                set.insert(dep);
+            }
+        }
+        deps.insert(key.clone(), set);
+    }
+
+    // Topological sort
+    let mut visited = HashSet::new();
+    let mut result = Vec::new();
+
+    fn visit(
+        key: &str,
+        env_map: &HashMap<String, String>,
+        deps: &HashMap<String, HashSet<String>>,
+        visited: &mut HashSet<String>,
+        result: &mut Vec<(String, String)>,
+    ) {
+        if visited.contains(key) {
+            return;
+        }
+        visited.insert(key.to_string());
+        if let Some(dep_set) = deps.get(key) {
+            for dep in dep_set {
+                visit(dep, env_map, deps, visited, result);
+            }
+        }
+        if let Some(val) = env_map.get(key) {
+            result.push((key.to_string(), val.clone()));
+        }
+    }
+
+    for key in env_map.keys() {
+        visit(key, env_map, &deps, &mut visited, &mut result);
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::context::{Context, OperatingSystem};
     use crate::Shell;
     use std::ffi::OsString;
+
+    #[test]
+    fn test_check_env_dependencies() {
+        // Multiple dependencies between keys
+        let mut env_map = HashMap::new();
+        env_map.insert("KEY1".to_string(), "foo/${KEY2}/${KEY4}".to_string());
+        env_map.insert("KEY2".to_string(), "foo".to_string());
+        env_map.insert("KEY3".to_string(), "foo/${KEY2}".to_string());
+        env_map.insert("KEY4".to_string(), "foo/${KEY3}".to_string());
+
+        let ordered = check_env_dependencies(&env_map);
+        assert_eq!(ordered[0].0, "KEY2");
+        assert_eq!(ordered[1].0, "KEY3");
+        assert_eq!(ordered[2].0, "KEY4");
+        assert_eq!(ordered[3].0, "KEY1");
+    }
+
+    #[test]
+    fn test_check_env_dependencies_with_external() {
+        // Dependencies with external
+        let mut env_map = HashMap::new();
+        env_map.insert(
+            "KEY1".to_string(),
+            "foo/${KEY2}/${KEY3}/${EXTERNAL}".to_string(),
+        );
+        env_map.insert("KEY2".to_string(), "foo/${EXTERNAL}".to_string());
+        env_map.insert("KEY3".to_string(), "foo/${KEY2}/${EXTERNAL}".to_string());
+
+        let ordered = check_env_dependencies(&env_map);
+        assert_eq!(ordered[0].0, "KEY2");
+        assert_eq!(ordered[1].0, "KEY3");
+        assert_eq!(ordered[2].0, "KEY1");
+    }
+
+    #[test]
+    fn test_check_env_dependencies_with_circular_dependencies() {
+        // Dependencies with circular references
+        let mut env_map = HashMap::new();
+        env_map.insert("KEY1".to_string(), "foo/${KEY2}/${EXTERNAL}".to_string());
+        env_map.insert("KEY2".to_string(), "foo/${KEY3}/${EXTERNAL}".to_string());
+        env_map.insert("KEY3".to_string(), "foo/${KEY1}/${EXTERNAL}".to_string());
+
+        let ordered = check_env_dependencies(&env_map);
+        // Take care of circular dependencies by ensuring all keys are present
+        assert_eq!(ordered.len(), 3);
+        let keys: Vec<String> = ordered.iter().map(|(k, _)| k.clone()).collect();
+        assert!(keys.contains(&"KEY1".to_string()));
+        assert!(keys.contains(&"KEY2".to_string()));
+        assert!(keys.contains(&"KEY3".to_string()));
+    }
 
     #[test]
     fn test_replace_placeholders() {

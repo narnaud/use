@@ -144,12 +144,12 @@ impl Environment {
         }
     }
 
-    fn env_name(&self) -> &str {
+    fn display_name(&self) -> &str {
         self.global.display.as_deref().unwrap_or(&self.name)
     }
 
-    /// Check dependencies in the environment hashmap and return a vector of (key, value) tuples
-    fn check_env_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, String)> {
+    /// Sort the environment hashmap by dependencies and return a vector of (key, value) tuples
+    fn sort_env_by_dependencies(env_map: &HashMap<String, String>) -> Vec<(String, String)> {
         use std::collections::HashSet;
 
         // Build dependency graph
@@ -201,11 +201,11 @@ impl Environment {
 
     /// Print the environment using the provided ShellPrinter
     pub fn print(&self, printer: &dyn ShellPrinter) {
-        printer.start(&self.name, self.env_name());
+        printer.start(&self.name, self.display_name());
 
         let process_map = |map: &Option<HashMap<String, String>>, action: &dyn Fn(&str, &str)| {
             if let Some(map) = map {
-                for (key, value) in Self::check_env_dependencies(map) {
+                for (key, value) in Self::sort_env_by_dependencies(map) {
                     let v = Self::substitute_env_vars(&value, printer);
                     action(&key, &v);
                 }
@@ -329,7 +329,7 @@ impl Config {
 
         // All good, just show a small message
         if let Some(env) = envs.last() {
-            shell_printer.finalize(&env.name, env.env_name());
+            shell_printer.finalize(&env.name, env.display_name());
         }
         Ok(())
     }
@@ -436,7 +436,7 @@ mod tests {
     use std::ffi::OsString;
 
     #[test]
-    fn test_check_env_dependencies() {
+    fn test_sort_env_by_dependencies() {
         // Multiple dependencies between keys
         let mut env_map = HashMap::new();
         env_map.insert("KEY1".to_string(), "foo/${KEY2}/${KEY4}".to_string());
@@ -444,13 +444,13 @@ mod tests {
         env_map.insert("KEY3".to_string(), "foo/${KEY2}".to_string());
         env_map.insert("KEY4".to_string(), "foo/${KEY3}".to_string());
 
-        let ordered = Environment::check_env_dependencies(&env_map);
+        let ordered = Environment::sort_env_by_dependencies(&env_map);
         let ordered_keys: Vec<_> = ordered.iter().map(|(k, _)| k.as_str()).collect();
         assert_eq!(ordered_keys, vec!["KEY2", "KEY3", "KEY4", "KEY1"]);
     }
 
     #[test]
-    fn test_check_env_dependencies_with_external() {
+    fn test_sort_env_by_dependencies_with_external() {
         // Dependencies with external
         let mut env_map = HashMap::new();
         env_map.insert(
@@ -460,20 +460,20 @@ mod tests {
         env_map.insert("KEY2".to_string(), "foo/${EXTERNAL}".to_string());
         env_map.insert("KEY3".to_string(), "foo/${KEY2}/${EXTERNAL}".to_string());
 
-        let ordered = Environment::check_env_dependencies(&env_map);
+        let ordered = Environment::sort_env_by_dependencies(&env_map);
         let ordered_keys: Vec<_> = ordered.iter().map(|(k, _)| k.as_str()).collect();
         assert_eq!(ordered_keys, vec!["KEY2", "KEY3", "KEY1"]);
     }
 
     #[test]
-    fn test_check_env_dependencies_with_circular_dependencies() {
+    fn test_sort_env_by_dependencies_with_circular_dependencies() {
         // Dependencies with circular references
         let mut env_map = HashMap::new();
         env_map.insert("KEY1".to_string(), "foo/${KEY2}/${EXTERNAL}".to_string());
         env_map.insert("KEY2".to_string(), "foo/${KEY3}/${EXTERNAL}".to_string());
         env_map.insert("KEY3".to_string(), "foo/${KEY1}/${EXTERNAL}".to_string());
 
-        let ordered = Environment::check_env_dependencies(&env_map);
+        let ordered = Environment::sort_env_by_dependencies(&env_map);
         // Take care of circular dependencies by ensuring all keys are present
         assert_eq!(ordered.len(), 3);
         let keys: Vec<String> = ordered.iter().map(|(k, _)| k.clone()).collect();

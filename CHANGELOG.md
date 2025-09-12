@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/narnaud/use/compare/v1.1.0...v1.2.0) (2025-09-12)
+
+
+### Features
+
+* Add env variable substitution ([939c195](https://github.com/narnaud/use/commit/939c195de2a44c4daad2dd05bbd7c58bc4dbafe9))
+* Resolve dependencies between environment variables ([d26271c](https://github.com/narnaud/use/commit/d26271c1f657b6fe265d2396401be5969c859902))
+
+
+### Bug Fixes
+
+* **cmd:** Add missing commands to completion ([1fad1e9](https://github.com/narnaud/use/commit/1fad1e9251e21b75b042e0daf53bcda80d6a529f))
+* Order of dependencies is now correct ([c0eeb0b](https://github.com/narnaud/use/commit/c0eeb0b82f22852c2010f62325f5775bfa2da235))
+* **powershell:** Add missing commands to completion ([f796225](https://github.com/narnaud/use/commit/f79622596a73911ca226111f7e1feed14548f676))
+
 ## [1.1.0](https://github.com/narnaud/use/compare/v1.0.0...v1.1.0) (2025-09-09)
 
 

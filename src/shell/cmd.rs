@@ -24,7 +24,7 @@ impl ShellPrinter for CmdPrinter {
     }
 
     fn go(&self, path: &str) {
-        println!("cd {}", path);
+        println!("cd /D {}", path);
     }
 
     fn change_title(&self, title: &str) {

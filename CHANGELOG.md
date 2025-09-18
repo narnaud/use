@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/narnaud/use/compare/v1.2.0...v1.2.1) (2025-09-18)
+
+
+### Bug Fixes
+
+* Allow changing disk with cmd ([e3f6d41](https://github.com/narnaud/use/commit/e3f6d413e0d6dd3f0c86ecfc9d09e1c4481a56e9))
+
 ## [1.2.0](https://github.com/narnaud/use/compare/v1.1.0...v1.2.0) (2025-09-12)
 
 

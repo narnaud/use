@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/narnaud/use/compare/v1.2.1...v1.2.2) (2025-09-27)
+
+
+### Other
+
+* update pre-commit hooks ([e56420f](https://github.com/narnaud/use/commit/e56420f52404b3d0f01d3e70de2df4d8f8036e5b))
+
 ## [1.2.1](https://github.com/narnaud/use/compare/v1.2.0...v1.2.1) (2025-09-18)
 
 

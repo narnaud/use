@@ -1,24 +1,23 @@
 {
 	"include-component-in-tag": false,
+	"bump-minor-pre-major": true,
+	"changelog-sections": [
+		{"type":"feat","section":"Features ✨","hidden":false},
+		{"type":"feature","section":"Features ✨","hidden":false},
+		{"type":"fix","section":"Bug Fixes 🐞","hidden":false},
+		{"type":"perf","section":"Performance Improvements ⚡","hidden":false},
+		{"type":"revert","section":"Reverts","hidden":false},
+		{"type":"docs","section":"Documentation","hidden":false},
+		{"type":"refactor","section":"Changes","hidden":false},
+		{"type":"style","section":"Styles","hidden":true},
+		{"type":"test","section":"Tests","hidden":false},
+		{"type":"chore","section":"Other","hidden":false},
+		{"type":"build","section":"Build System","hidden":true},
+		{"type":"ci","section":"Continuous Integration","hidden":true}
+	],
 	"packages": {
 		".": {
-			"bootstrap-sha":"b9f858d89f3ece3f22c270347099f901e3341a24",
-		  	"release-type": "rust",
-			"bump-minor-pre-major": true,
-			"changelog-sections": [
-				{"type":"feat","section":"Features 🚀","hidden":false},
-				{"type":"feature","section":"Features 🚀","hidden":false},
-				{"type":"fix","section":"Bug Fixes 🐞","hidden":false},
-				{"type":"revert","section":"Reverts ⎌","hidden":false},
-				{"type":"perf","section":"Performance Improvements ⚡","hidden":false},
-				{"type":"docs","section":"Documentation 📚","hidden":false},
-				{"type":"style","section":"Styles ✨","hidden":false},
-				{"type":"refactor","section":"Code Refactoring 🛠️","hidden":false},
-				{"type":"test","section":"Tests 🧪","hidden":false},
-				{"type":"build","section":"Other 🧰","hidden":true},
-				{"type":"chore","section":"Other 🧰","hidden":false},
-				{"type":"ci","section":"Other 🧰","hidden":true}
-			]			
+		  	"release-type": "rust"
 		}
 	}
 }

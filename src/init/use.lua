@@ -80,7 +80,7 @@ local function use_filter(line)
     end
 
     -- Check for any flags
-    if param == "" or param:match("^[-|init|config|list|set|print|help]") then
+    if param == "" or param:find("^-") or param:find("^init") or param:find("^config") or param:find("^list") or param:find("^set") or param:find("^print") or param:find("^help") then
         os.execute(::USE:: .. " " .. param)
         return "", false
     else

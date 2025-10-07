@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.2](https://github.com/narnaud/use/compare/v1.2.1...v1.2.2) (2025-10-07)
+
+
+### Bug Fixes 🐞
+
+* **cmd:** Fix detection of flags in init script ([4302cc9](https://github.com/narnaud/use/commit/4302cc9c8569637056edd302ed17b7ff81f617b7))
+
+
+### Other
+
+* update pre-commit hooks ([e56420f](https://github.com/narnaud/use/commit/e56420f52404b3d0f01d3e70de2df4d8f8036e5b))
+
 ## [1.2.1](https://github.com/narnaud/use/compare/v1.2.0...v1.2.1) (2025-09-18)
 
 

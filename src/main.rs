@@ -139,7 +139,7 @@ fn handle_set(key: Option<SettingsKey>, value: Option<String>) {
 fn handle_use(context: &Context, name: String, printing: bool) {
     if !printing && context.shell == Shell::Unknown {
         eprintln!(
-            "{}: Unknown shell, make sure to initialize use first (see documentation)",
+            "{} Unknown shell, make sure to initialize use first (see documentation)",
             "error:".error()
         );
         std::process::exit(1);
@@ -152,7 +152,7 @@ fn handle_use(context: &Context, name: String, printing: bool) {
     };
 
     let config = Config::new(context).unwrap_or_else(|e| {
-        let error = format!("{}: {}", "error:".error(), e);
+        let error = format!("{} {}", "error:".error(), e);
         shell_printer.echo(&error);
         std::process::exit(1);
     });
@@ -162,7 +162,7 @@ fn handle_use(context: &Context, name: String, printing: bool) {
     config
         .print_env(&name, &settings, shell_printer.as_ref())
         .unwrap_or_else(|e| {
-            let warning = format!("{}: {}", "warning:".warning(), e);
+            let warning = format!("{} {}", "warning:".warning(), e);
             shell_printer.echo(&warning);
             std::process::exit(1);
         });

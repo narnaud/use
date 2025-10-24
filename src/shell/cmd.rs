@@ -24,7 +24,8 @@ impl ShellPrinter for CmdPrinter {
     }
 
     fn go(&self, path: &str) {
-        println!("cd /D {}", path);
+        // Use chdir, as may be aliased to something else
+        println!("chdir /D {}", path);
     }
 
     fn change_title(&self, title: &str) {

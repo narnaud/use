@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/narnaud/use/compare/v1.2.2...v1.2.3) (2025-10-24)
+
+
+### Bug Fixes 🐞
+
+* **cmd:** Fix go to use `chdir` instead of `cd` ([8b6baac](https://github.com/narnaud/use/commit/8b6baac74b42a8ae21a3f94668b1c7f6c75ba844))
+* Remove double `:` in warning and error messages ([812b853](https://github.com/narnaud/use/commit/812b8532cad07e9ae256c28118e2d06a23828821))
+
 ## [1.2.2](https://github.com/narnaud/use/compare/v1.2.1...v1.2.2) (2025-10-07)
 
 

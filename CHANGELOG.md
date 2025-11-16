@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/narnaud/use/compare/v1.2.2...v1.3.0) (2025-11-16)
+
+
+### Features ✨
+
+* Change config file path to $HOME/.config/use.yaml ([0a89acd](https://github.com/narnaud/use/commit/0a89acda4c8a6ebe4e1744061c878dad61281dee))
+
+
+### Bug Fixes 🐞
+
+* **cmd:** Fix go to use `chdir` instead of `cd` ([8b6baac](https://github.com/narnaud/use/commit/8b6baac74b42a8ae21a3f94668b1c7f6c75ba844))
+* Remove double `:` in warning and error messages ([812b853](https://github.com/narnaud/use/commit/812b8532cad07e9ae256c28118e2d06a23828821))
+
 ## [1.2.2](https://github.com/narnaud/use/compare/v1.2.1...v1.2.2) (2025-10-07)
 
 

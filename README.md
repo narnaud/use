@@ -77,7 +77,7 @@ Options:
 
 ## Configuration
 
-**Use** expect a YAML configuration file in `~/.config/use/useconfig.yaml` (or `%USERPROFILE%\.config\use\useconfig.yaml` on Windows). Here is a small example:
+**Use** expect a YAML configuration file in `~/.config/use.yaml` (or `%USERPROFILE%\.config\use.yaml` on Windows). Here is a small example:
 
 ```yaml
 # Example environment

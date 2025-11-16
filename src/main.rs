@@ -87,6 +87,16 @@ fn main() {
     }
 }
 
+fn check_config(context: &Context) {
+    if context.check_old_config() {
+        eprintln!(
+            "{}: Old configuration file detected at ~/.config/use/useconfig.yaml. Please migrate to the new configuration file location {}.",
+            "error:".error(), "~/.config/use.yaml".info()
+        );
+        std::process::exit(1);
+    }
+}
+
 fn handle_init(shell: Shell, print_full_init: bool) {
     let result = if print_full_init {
         init::init_main(shell)
@@ -100,6 +110,7 @@ fn handle_init(shell: Shell, print_full_init: bool) {
 }
 
 fn handle_config(context: &Context, create: bool) {
+    check_config(context);
     let result = if create {
         context.create_config_file().map(|_| {
             println!(
@@ -118,6 +129,7 @@ fn handle_config(context: &Context, create: bool) {
 }
 
 fn handle_list(context: &Context) {
+    check_config(context);
     let config = Config::new(context).unwrap_or_else(|e| {
         eprintln!("{}: {}", "error:".error(), e);
         std::process::exit(1);
@@ -137,6 +149,7 @@ fn handle_set(key: Option<SettingsKey>, value: Option<String>) {
 }
 
 fn handle_use(context: &Context, name: String, printing: bool) {
+    check_config(context);
     if !printing && context.shell == Shell::Unknown {
         eprintln!(
             "{} Unknown shell, make sure to initialize use first (see documentation)",

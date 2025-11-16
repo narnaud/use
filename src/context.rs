@@ -34,6 +34,16 @@ impl Context {
         }
     }
 
+    pub fn check_old_config(&self) -> bool {
+        let old_config_path = dirs::home_dir()
+            .expect("Could not find home directory")
+            .join(".config")
+            .join("use")
+            .join("useconfig.yaml");
+        let config_path = std::path::Path::new(&self.config_path);
+        !config_path.exists() && old_config_path.exists()
+    }
+
     pub fn check(&self, context: &str) -> bool {
         // split context string per ','
         let contexts: Vec<&str> = context.split(',').collect();
@@ -85,8 +95,7 @@ fn get_config_path() -> OsString {
     dirs::home_dir()
         .expect("Could not find home directory")
         .join(".config")
-        .join("use")
-        .join("useconfig.yaml")
+        .join("use.yaml")
         .into()
 }
 

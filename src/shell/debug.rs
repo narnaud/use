@@ -1,14 +1,19 @@
 use crate::colorize::Colorize;
 use crate::shell::ShellPrinter;
+use console::style;
 
 pub struct DebugPrinter {}
 
 impl ShellPrinter for DebugPrinter {
     fn start(&self, name: &str, env_name: &str) {
-        println!("🗲 {}: {}", name.success(), env_name.info());
+        println!(
+            "{} {}",
+            style(name).on_green().black(),
+            style(env_name).blue()
+        );
     }
     fn finish(&self) {
-        println!("---");
+        println!();
     }
     fn finalize(&self, _name: &str, _env_name: &str) {
         // Do nothing
@@ -19,7 +24,14 @@ impl ShellPrinter for DebugPrinter {
     }
 
     fn run(&self, script: &str) {
-        println!("{}\n{}\n{}", "```".info(), script, "```".info());
+        // Split script into lines for better formatting
+        // then add | at the beginning of each line
+        let formatted_script = script
+            .lines()
+            .map(|line| format!("{} {} {}", style('│').green(), style('┃').blue(), line))
+            .collect::<Vec<_>>()
+            .join("\n");
+        println!("{}", formatted_script);
     }
 
     fn set(&self, key: &str, value: &str) {
@@ -27,23 +39,23 @@ impl ShellPrinter for DebugPrinter {
             // Skip printing USE_PROMPT to avoid clutter
             return;
         }
-        println!("- {} = {}", key, value);
+        println!("{} {} = {}", style('│').green(), key, value);
     }
 
     fn append(&self, key: &str, value: &str) {
-        println!("- {} += {}", key, value);
+        println!("{} {} += {}", style('│').green(), key, value);
     }
 
     fn prepend(&self, key: &str, value: &str) {
-        println!("- {} += {}", key, value);
+        println!("{} {} += {}", style('│').green(), key, value);
     }
 
     fn prepend_path(&self, path: &str) {
-        println!("- PATH += {}", path);
+        println!("{} PATH += {}", style('│').green(), path);
     }
 
     fn go(&self, path: &str) {
-        println!("⇒ {}", path.info());
+        println!("{} {}", style("└→").green(), path);
     }
 
     fn change_title(&self, _title: &str) {

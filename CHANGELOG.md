@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.1](https://github.com/narnaud/use/compare/v1.3.0...v1.3.1) (2025-11-21)
+
+
+### Bug Fixes 🐞
+
+* **print:** Improve readability of the print command ([0e5058b](https://github.com/narnaud/use/commit/0e5058bfd96e50cc4e1df847d14962e724bcb4cd))
+
+
+### Other
+
+* Update dependencies ([d9caaa0](https://github.com/narnaud/use/commit/d9caaa01903ed8d9f203746fd36aa43cc00b839d))
+
 ## [1.3.0](https://github.com/narnaud/use/compare/v1.2.2...v1.3.0) (2025-11-16)
 
 

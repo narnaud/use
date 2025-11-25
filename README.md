@@ -44,7 +44,7 @@ Invoke-Expression (&use init powershell)
 > [!TIP]
 > If you install **use** with scoop, you don't need to do anything, it will install such a script automatically.
 
-You need [clink](https://chrisant996.github.io/clink/) wit Cmd. Create a file at this path %LocalAppData%\clink\use.lua with the following contents:
+You need [clink](https://chrisant996.github.io/clink/) with Cmd. Create a file at this path %LocalAppData%\clink\use.lua with the following contents:
 
 ```cmd
 load(io.popen('use init cmd'):read("*a"))()
@@ -221,10 +221,10 @@ example:
     - qt6
 ```
 
-### Environement variables
+### Environment variables
 
 It's possible to use environment variables as part of the value of a field. The syntax for that is `${ENV_VARIABLE}`.
-It will be replaced by the current shell way of handling environement variables, for example `%ENV_VARIABLE%` on cmd, and `$env:ENV_VARIABLE` on powershell.
+It will be replaced by the current shell way of handling environment variables, for example `%ENV_VARIABLE%` on cmd, and `$env:ENV_VARIABLE` on powershell.
 
 For example, the `qt` environment reuse `QTDIR` in other variables:
 

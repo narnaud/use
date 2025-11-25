@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/narnaud/use/compare/v1.3.1...v1.3.2) (2025-11-25)
+
+
+### Documentation
+
+* Fix typos ([85e4640](https://github.com/narnaud/use/commit/85e46408de0d6912686e68c289489f078856b05e))
+
 ## [1.3.1](https://github.com/narnaud/use/compare/v1.3.0...v1.3.1) (2025-11-21)
 
 

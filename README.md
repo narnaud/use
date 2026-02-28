@@ -25,11 +25,24 @@ scoop bucket add narnaud https://github.com/narnaud/scoop-bucket
 scoop install use
 ```
 
-### Or via archive files
+### Installation via [Cargo](https://doc.rust-lang.org/cargo/)
 
-1. Go to the [Releases](https://github.com/narnaud/use/releases) page
-2. Download the latest `use-x86_64-pc-windows-msvc.zip` file
-3. Extract the files from it into a directory.
+```
+cargo install useenv
+```
+
+### Or via prebuilt binaries
+
+Download the latest archive for your platform from the [Releases](https://github.com/narnaud/use/releases) page:
+
+| Platform | Archive |
+|----------|---------|
+| Windows (x86_64) | `use-x86_64-pc-windows-msvc.zip` |
+| Linux (x86_64) | `use-x86_64-unknown-linux-gnu.tar.gz` |
+| Linux (aarch64) | `use-aarch64-unknown-linux-gnu.tar.gz` |
+| macOS (Apple Silicon) | `use-aarch64-apple-darwin.tar.gz` |
+
+Download the archive for your platform and extract the binary into a directory in your `PATH`.
 
 ## Set up your shell
 

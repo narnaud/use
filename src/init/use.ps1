@@ -4,7 +4,7 @@
 # variables
 $null = New-Module use {
 
-    ## Use fonction -------------------------------------------------------
+    ## Use function -------------------------------------------------------
     function Use-Environment {
         param(
             [Parameter(Mandatory = $false)]

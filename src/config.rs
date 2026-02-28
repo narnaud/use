@@ -7,10 +7,10 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+use crate::Shell;
 use crate::context::Context;
 use crate::settings::Settings;
 use crate::shell::ShellPrinter;
-use crate::Shell;
 
 static ENV_VAR_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap());
@@ -262,20 +262,20 @@ impl Environment {
         };
 
         for entry in entries.flatten() {
-            if let Ok(name) = entry.file_name().into_string() {
-                if let Some(captures) = re.captures(&name) {
-                    let mut new_env = self.clone();
+            if let Ok(name) = entry.file_name().into_string()
+                && let Some(captures) = re.captures(&name)
+            {
+                let mut new_env = self.clone();
 
-                    for capture in captures.iter().skip(1).flatten() {
-                        new_env.replace_placeholders(capture.as_str());
-                    }
-
-                    new_env.version = captures.get(1).map(|m| m.as_str().to_string());
-                    new_env.original_name = Some(self.name.to_string());
-                    new_env.pattern = None;
-
-                    pattern_envs.push(new_env);
+                for capture in captures.iter().skip(1).flatten() {
+                    new_env.replace_placeholders(capture.as_str());
                 }
+
+                new_env.version = captures.get(1).map(|m| m.as_str().to_string());
+                new_env.original_name = Some(self.name.to_string());
+                new_env.pattern = None;
+
+                pattern_envs.push(new_env);
             }
         }
 
@@ -414,15 +414,14 @@ impl Config {
     /// to determine the order. If the original key is the same, sort by version.
     fn sort_environments(environments: &mut [Environment]) {
         environments.sort_by(|a, b| {
-            if let (Some(key_a), Some(key_b)) = (&a.original_name, &b.original_name) {
-                if key_a == key_b {
-                    if let (Some(ver_a), Some(ver_b)) = (&a.version, &b.version) {
-                        if let (Ok(v_a), Ok(v_b)) = (Version::parse(ver_a), Version::parse(ver_b)) {
-                            return v_b.cmp(&v_a); // Newer versions first
-                        }
-                    }
-                }
+            if let (Some(key_a), Some(key_b)) = (&a.original_name, &b.original_name)
+                && key_a == key_b
+                && let (Some(ver_a), Some(ver_b)) = (&a.version, &b.version)
+                && let (Ok(v_a), Ok(v_b)) = (Version::parse(ver_a), Version::parse(ver_b))
+            {
+                return v_b.cmp(&v_a); // Newer versions first
             }
+
             a.name.cmp(&b.name) // Default lexicographical sort
         });
     }
@@ -431,8 +430,8 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::context::{Context, OperatingSystem};
     use crate::Shell;
+    use crate::context::{Context, OperatingSystem};
     use std::ffi::OsString;
 
     #[test]

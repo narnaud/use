@@ -91,7 +91,8 @@ fn check_config(context: &Context) {
     if context.check_old_config() {
         eprintln!(
             "{}: Old configuration file detected at ~/.config/use/useconfig.yaml. Please migrate to the new configuration file location {}.",
-            "error:".error(), "~/.config/use.yaml".info()
+            "error:".error(),
+            "~/.config/use.yaml".info()
         );
         std::process::exit(1);
     }

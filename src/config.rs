@@ -366,7 +366,7 @@ impl Config {
     ) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
         let file = fs::File::open(file_path)?;
         let reader = BufReader::new(file);
-        let env_hash: HashMap<String, Environment> = serde_yaml::from_reader(reader)?;
+        let env_hash: HashMap<String, Environment> = yaml_serde::from_reader(reader)?;
         Self::create_env_vector(context, env_hash)
     }
 
@@ -377,7 +377,7 @@ impl Config {
         content: &str,
         context: &Context,
     ) -> Result<Vec<Environment>, Box<dyn std::error::Error>> {
-        let env_hash: HashMap<String, Environment> = serde_yaml::from_str(content)?;
+        let env_hash: HashMap<String, Environment> = yaml_serde::from_str(content)?;
         Self::create_env_vector(context, env_hash)
     }
 

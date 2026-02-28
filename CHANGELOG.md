@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.2](https://github.com/narnaud/use/compare/v1.3.1...v1.3.2) (2026-02-28)
+
+
+### Documentation
+
+* Fix typos ([85e4640](https://github.com/narnaud/use/commit/85e46408de0d6912686e68c289489f078856b05e))
+
+
+### Other
+
+* Add release profile for optimized binary size ([aaac818](https://github.com/narnaud/use/commit/aaac818864248f77c605008ea5e7344c86119a67))
+* **ci:** Update build and publish, add dependabot ([c7603f5](https://github.com/narnaud/use/commit/c7603f5816a15477819d5aa91ddb18c0a8cc8305))
+* **deps:** bump actions/checkout from 4 to 6 ([6ef42fa](https://github.com/narnaud/use/commit/6ef42fa04f6268fbb4ec370cdd740325c4145c65))
+* **deps:** bump clap from 4.5.53 to 4.5.60 ([773d4e3](https://github.com/narnaud/use/commit/773d4e36487408f83f3708e7838673dcff36c100))
+* **deps:** bump console from 0.16.1 to 0.16.2 ([86b45c9](https://github.com/narnaud/use/commit/86b45c91344c065d5463aac7ae9e3ba3267c8eee))
+* **deps:** bump regex from 1.12.2 to 1.12.3 ([faa37d6](https://github.com/narnaud/use/commit/faa37d645754fd700b3011cacc97f706730357b9))
+* **deps:** Replace deprecated serde_yaml with yaml_serde ([405426d](https://github.com/narnaud/use/commit/405426d26a9e98166f5d6c94c57f4f27c86a80dc))
+* Update manifest with metadata ([2620838](https://github.com/narnaud/use/commit/2620838aa346294e1feb3631ff4d0617a97b89cd))
+
 ## [1.3.1](https://github.com/narnaud/use/compare/v1.3.0...v1.3.1) (2025-11-21)
 
 

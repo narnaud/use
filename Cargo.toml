@@ -26,3 +26,7 @@ semver = "1.0.26"
 which = "8.0.0"
 once_cell = "1.21.3"
 console = "0.16.1"
+
+[profile.release]
+lto = true
+strip = true

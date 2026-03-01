@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.3](https://github.com/narnaud/use/compare/v1.3.2...v1.3.3) (2026-03-01)
+
+
+### Bug Fixes 🐞
+
+* Fix cargo linters ([426a9e3](https://github.com/narnaud/use/commit/426a9e328c6f4066d75387f353e23fcaab579d9b))
+
+
+### Documentation
+
+* Update installation section ([572ed52](https://github.com/narnaud/use/commit/572ed52d0b30540bf54dc90a9ac92a46258cc2d2))
+
+
+### Other
+
+* Add CODEOWNERS ([b361cd3](https://github.com/narnaud/use/commit/b361cd3831b61653f248fb1219641902738df85b))
+* Fix spelling ([92d44a9](https://github.com/narnaud/use/commit/92d44a9feb9f68ae93697c727722e54b5485af7f))
+* Small cleanup fixes ([bb1be72](https://github.com/narnaud/use/commit/bb1be72460cf37fdcbd88240a1eb2639b0f1785f))
+* Update pre-commit hooks ([334c2c2](https://github.com/narnaud/use/commit/334c2c25f238d384ea582506bc4a9800fcad2fbc))
+
 ## [1.3.2](https://github.com/narnaud/use/compare/v1.3.1...v1.3.2) (2026-02-28)
 
 

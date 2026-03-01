@@ -175,7 +175,7 @@
 * Add Cargo.lock to the repository ([c239b6b](https://github.com/narnaud/use/commit/c239b6bab1d137415ccf31c42a997fd829bfc458))
 * Add logger using log crate ([c875977](https://github.com/narnaud/use/commit/c875977265438016bcc8f488687d396880645889))
 * Check the config file ([41b2c25](https://github.com/narnaud/use/commit/41b2c250b434d070958ae819f32de1a44c471053))
-* Handle command line paramters ([3a4e7a7](https://github.com/narnaud/use/commit/3a4e7a70652ceda37f6d8875d6c34d72a823a025))
+* Handle command line parameters ([3a4e7a7](https://github.com/narnaud/use/commit/3a4e7a70652ceda37f6d8875d6c34d72a823a025))
 * Merge environments before printing ([63dbaf9](https://github.com/narnaud/use/commit/63dbaf963ed8a12a3b3bc6f31700ae3c3c6bfd34))
 * Print the resulting environment ([75a9faa](https://github.com/narnaud/use/commit/75a9faa30578a84624ea7dc6053f5dbf2119f4bf))
 * Read the config file ([868c1e3](https://github.com/narnaud/use/commit/868c1e355fbf68087bcd3f9de297a5d0e4e2e5d4))

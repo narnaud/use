@@ -23,7 +23,7 @@ yaml_serde = "0.10.3"
 regex = "1.12.3"
 preferences = "2.0"
 semver = "1.0.26"
-which = "8.0.0"
+which = "8.0.1"
 once_cell = "1.21.3"
 console = "0.16.2"
 

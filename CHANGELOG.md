@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4](https://github.com/narnaud/use/compare/v1.3.3...v1.3.4) (2026-03-07)
+
+
+### Other
+
+* **deps:** bump actions/checkout from 4 to 6 ([1dc7f23](https://github.com/narnaud/use/commit/1dc7f23800fdc990f8c0a00b53d31e901519b878))
+* **deps:** bump which from 8.0.0 to 8.0.1 ([bea9237](https://github.com/narnaud/use/commit/bea9237986e8bd8f54698ff1e23d03893b83f9df))
+
 ## [1.3.3](https://github.com/narnaud/use/compare/v1.3.2...v1.3.3) (2026-03-01)
 
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.3.4](https://github.com/narnaud/use/compare/v1.3.3...v1.3.4) (2026-03-17)
+
+
+### Changes
+
+* Use std::sync::Lazy instead of the one from one_cell ([5e91b96](https://github.com/narnaud/use/commit/5e91b961141c44abafd588377dfb937a294c4498))
+
+
+### Other
+
+* **deps:** bump actions/checkout from 4 to 6 ([1dc7f23](https://github.com/narnaud/use/commit/1dc7f23800fdc990f8c0a00b53d31e901519b878))
+* **deps:** bump clap from 4.5.60 to 4.6.0 ([42a1f56](https://github.com/narnaud/use/commit/42a1f56fdc7fe5ed215b569a913e04a9f90284f6))
+* **deps:** bump console from 0.16.2 to 0.16.3 ([41457c6](https://github.com/narnaud/use/commit/41457c68da5408603ba9dbd23ff4843248942789))
+* **deps:** bump once_cell from 1.21.3 to 1.21.4 ([ec937a5](https://github.com/narnaud/use/commit/ec937a5b743e55be68adc573ae0be4a6b1bc8910))
+* **deps:** bump which from 8.0.0 to 8.0.1 ([bea9237](https://github.com/narnaud/use/commit/bea9237986e8bd8f54698ff1e23d03893b83f9df))
+* **deps:** bump which from 8.0.1 to 8.0.2 ([e1ffd08](https://github.com/narnaud/use/commit/e1ffd08ead5e589e4983791c02d2b92f970b4009))
+* **deps:** bump yaml_serde from 0.10.3 to 0.10.4 ([d5ed0ec](https://github.com/narnaud/use/commit/d5ed0ecc225afa7285403646b47347e54f54a2ab))
+
 ## [1.3.3](https://github.com/narnaud/use/compare/v1.3.2...v1.3.3) (2026-03-01)
 
 

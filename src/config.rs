@@ -1,4 +1,3 @@
-use once_cell::sync::Lazy;
 use regex::Regex;
 use semver::Version;
 use serde::Deserialize;
@@ -6,14 +5,15 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 use crate::Shell;
 use crate::context::Context;
 use crate::settings::Settings;
 use crate::shell::ShellPrinter;
 
-static ENV_VAR_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap());
+static ENV_VAR_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}").unwrap());
 
 /// Struct to hold the pattern of the environment
 #[derive(Debug, Deserialize, Clone, PartialEq)]

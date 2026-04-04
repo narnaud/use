@@ -22,7 +22,7 @@ serde = { version = "1.0.219", features = [ "derive" ] }
 yaml_serde = "0.10.4"
 regex = "1.12.3"
 preferences = "2.0"
-semver = "1.0.26"
+semver = "1.0.28"
 which = "8.0.2"
 console = "0.16.3"
 

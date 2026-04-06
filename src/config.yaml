@@ -48,3 +48,6 @@ qt{}:
     CMAKE_PREFIX_PATH: ${QTDIR}
   path:
     - ${QTDIR}\bin
+  alias:
+    ass{}: ${QTDIR}\bin\assistant.exe
+    des{}: ${QTDIR}\bin\designer.exe

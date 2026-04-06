@@ -58,6 +58,10 @@ impl ShellPrinter for DebugPrinter {
         println!("{} {}", style("└→").green(), path);
     }
 
+    fn alias(&self, name: &str, command: &str) {
+        println!("{} {} → {}", style('│').green(), name, command);
+    }
+
     fn change_title(&self, _title: &str) {
         // Do nothing
     }

@@ -34,6 +34,7 @@ struct CommonProperties {
     #[serde(rename = "use")]
     reuse: Option<Vec<String>>,
     go: Option<String>,
+    alias: Option<HashMap<String, String>>,
 }
 
 impl CommonProperties {
@@ -55,6 +56,7 @@ impl CommonProperties {
         merge_map(&mut self.set, other.set);
         merge_map(&mut self.append, other.append);
         merge_map(&mut self.prepend, other.prepend);
+        merge_map(&mut self.alias, other.alias);
 
         let merge_vec = |target: &mut Option<Vec<String>>, source: Option<Vec<String>>| {
             if let Some(source_vec) = source {
@@ -120,6 +122,13 @@ impl Environment {
                     .collect()
             });
         };
+        let replace_map_keys = |m: &mut Option<HashMap<String, String>>| {
+            *m = m.as_ref().map(|map| {
+                map.iter()
+                    .map(|(k, v)| (k.replacen("{}", value, 1), v.replacen("{}", value, 1)))
+                    .collect()
+            });
+        };
 
         self.name = self.name.replacen("{}", value, 1);
         replace(&mut self.global.display);
@@ -128,6 +137,7 @@ impl Environment {
         replace_map(&mut self.global.set);
         replace_map(&mut self.global.append);
         replace_map(&mut self.global.prepend);
+        replace_map_keys(&mut self.global.alias);
         replace_vec(&mut self.global.path);
     }
 
@@ -215,6 +225,13 @@ impl Environment {
         process_map(&self.global.set, &|k, v| printer.set(k, v));
         process_map(&self.global.append, &|k, v| printer.append(k, v));
         process_map(&self.global.prepend, &|k, v| printer.prepend(k, v));
+
+        if let Some(alias) = &self.global.alias {
+            for (name, command) in alias {
+                let cmd = Self::substitute_env_vars(command, printer);
+                printer.alias(name, &cmd);
+            }
+        }
 
         if let Some(paths) = &self.global.path {
             for path in paths {
@@ -502,6 +519,7 @@ mod tests {
                 path: Some(vec!["path/to/{}".to_string()]),
                 reuse: None,
                 go: Some("go-to-{}".to_string()),
+                aliases: None,
             },
             for_cmd: None,
             for_powershell: None,
@@ -554,6 +572,7 @@ mod tests {
                 path: None,
                 reuse: None,
                 go: None,
+                aliases: None,
             },
             for_cmd: None,
             for_powershell: None,
@@ -594,6 +613,7 @@ mod tests {
                 path: Some(vec!["global/path".to_string()]),
                 reuse: Some(vec!["global_reuse".to_string()]),
                 go: None,
+                aliases: None,
             },
             for_cmd: Some(CommonProperties {
                 display: Some("CMD Display".to_string()),
@@ -610,6 +630,7 @@ mod tests {
                 path: Some(vec!["cmd/path".to_string()]),
                 reuse: Some(vec!["cmd_reuse".to_string()]),
                 go: Some("cmd_go".to_string()),
+                aliases: None,
             }),
             for_powershell: None,
             version: None,

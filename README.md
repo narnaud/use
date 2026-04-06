@@ -111,6 +111,8 @@ example:
   prepend:
     EXAMPLE_VAR_PREPEND: value prepended to EXAMPLE_VAR_PREPEND
     EXAMPLE_VAR_OTHER_PREPEND: value prepended to EXAMPLE_VAR_OTHER_PREPEND
+  alias:
+    ll: ls -l
   path:
     - C:\example\path\to\add\to\path
     - C:\example\other\path\to\add\to\path
@@ -143,6 +145,8 @@ qt{}:
     CMAKE_PREFIX_PATH: ${QTDIR}
   path:
     - ${QTDIR}\bin
+  alias:
+    des{}: ${QTDIR}\bin\designer.exe
 ```
 
 The YAML file is a map of environments, the key being used as the environment name when running the command. For each environment, you can have:
@@ -152,6 +156,7 @@ The YAML file is a map of environments, the key being used as the environment na
 - `set`: list of environment variables to initialize
 - `append`: append values to environment variables
 - `prepend`: prepend values to environment variables
+- `alias`: add aliases for this environment
 - `path`: add paths to the `PATH` environment variable
 - `script`: raw lines to call as a script
 - `go`: go to a particular directory at the end of the setup
@@ -202,6 +207,8 @@ qt{}:
     CMAKE_PREFIX_PATH: ${QTDIR}
   path:
     - ${QTDIR}\bin
+  alias:
+    des{}: ${QTDIR}\bin\designer.exe
 ```
 
 The interesting part is the `pattern` key:
@@ -248,6 +255,8 @@ For example, the `qt` environment reuse `QTDIR` in other variables:
     CMAKE_PREFIX_PATH: ${QTDIR}
   path:
     - ${QTDIR}\bin
+  alias:
+    des{}: ${QTDIR}\bin\designer.exe
 ```
 
 It's important to note the order in which the different values are set, and there are no particular orders inside set, append and prepend.

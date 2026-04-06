@@ -31,6 +31,10 @@ impl ShellPrinter for PowershellPrinter {
         println!("$host.ui.RawUI.WindowTitle = '{}'", title);
     }
 
+    fn alias(&self, name: &str, command: &str) {
+        println!("function {} {{ & \"{}\" @args }}", name, command);
+    }
+
     fn env_variable(&self, env: &str) -> String {
         format!("$env:{}", env)
     }

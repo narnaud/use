@@ -32,6 +32,10 @@ impl ShellPrinter for CmdPrinter {
         println!("TITLE {}", title);
     }
 
+    fn alias(&self, name: &str, command: &str) {
+        println!("doskey {}= \"{}\" $*", name, command);
+    }
+
     fn env_variable(&self, env: &str) -> String {
         format!("%{}%", env)
     }

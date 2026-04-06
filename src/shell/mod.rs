@@ -29,6 +29,7 @@ pub trait ShellPrinter {
     fn prepend(&self, key: &str, value: &str);
     fn prepend_path(&self, path: &str);
     fn go(&self, path: &str);
+    fn alias(&self, name: &str, command: &str);
 
     fn change_title(&self, title: &str);
 

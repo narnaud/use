@@ -521,7 +521,7 @@ checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 
 [[package]]
 name = "useenv"
-version = "1.3.4"
+version = "1.4.0"
 dependencies = [
  "clap",
  "console",

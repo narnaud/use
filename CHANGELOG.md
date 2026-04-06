@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/narnaud/use/compare/v1.3.4...v1.4.0) (2026-04-06)
+
+
+### Features ✨
+
+* Add aliases configuration for environment ([7393cbd](https://github.com/narnaud/use/commit/7393cbd71a565f3f7ab471485c455b024ab1c19e))
+
+
+### Other
+
+* **deps:** bump semver from 1.0.27 to 1.0.28 ([31d2914](https://github.com/narnaud/use/commit/31d2914218befd3a571e44b284d8869b8bfff8b0))
+
 ## [1.3.4](https://github.com/narnaud/use/compare/v1.3.3...v1.3.4) (2026-03-17)
 
 

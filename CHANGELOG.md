@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1](https://github.com/narnaud/use/compare/v1.4.0...v1.4.1) (2026-04-26)
+
+
+### Other
+
+* **deps:** bump clap from 4.6.0 to 4.6.1 ([15b2257](https://github.com/narnaud/use/commit/15b22570607e64bdd4733dbe2c26c2063d0ea1f4))
+* **deps:** bump googleapis/release-please-action from 4 to 5 ([5fcd2f8](https://github.com/narnaud/use/commit/5fcd2f8ca58a8bc35fd75511e87c36fd182d785c))
+* **deps:** bump softprops/action-gh-release from 2 to 3 ([c440eea](https://github.com/narnaud/use/commit/c440eeaa76aabb3246392eb11403193beebe787b))
+
 ## [1.4.0](https://github.com/narnaud/use/compare/v1.3.4...v1.4.0) (2026-04-06)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1](https://github.com/narnaud/use/compare/v1.4.0...v1.4.1) (2026-06-21)
+
+
+### Other
+
+* **deps:** bump actions/checkout from 6 to 7 ([0a8a4bc](https://github.com/narnaud/use/commit/0a8a4bc996f94745192a0a49f77dfc02a1db02ff))
+* **deps:** bump clap from 4.6.0 to 4.6.1 ([15b2257](https://github.com/narnaud/use/commit/15b22570607e64bdd4733dbe2c26c2063d0ea1f4))
+* **deps:** bump googleapis/release-please-action from 4 to 5 ([5fcd2f8](https://github.com/narnaud/use/commit/5fcd2f8ca58a8bc35fd75511e87c36fd182d785c))
+* **deps:** bump regex from 1.12.3 to 1.12.4 ([8c9e44a](https://github.com/narnaud/use/commit/8c9e44ada5524a6dff78f47d6f2b2a16096e968f))
+* **deps:** bump softprops/action-gh-release from 2 to 3 ([c440eea](https://github.com/narnaud/use/commit/c440eeaa76aabb3246392eb11403193beebe787b))
+* **deps:** bump which from 8.0.2 to 8.0.4 ([7c9ffe3](https://github.com/narnaud/use/commit/7c9ffe3ca3691687d5ad3819271f54e6bba05aea))
+
 ## [1.4.0](https://github.com/narnaud/use/compare/v1.3.4...v1.4.0) (2026-04-06)
 
 

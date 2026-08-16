@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.2](https://github.com/narnaud/use/compare/v1.4.1...v1.4.2) (2026-08-16)
+
+
+### Other
+
+* **deps:** bump actions/setup-python from 6 to 7 ([c084cfe](https://github.com/narnaud/use/commit/c084cfe5e1a99b1ad92d7b372158a6bd4c3902ef))
+* **deps:** bump clap from 4.6.1 to 4.6.6 ([a2ee956](https://github.com/narnaud/use/commit/a2ee956a2b832fc257bbfc5227125bd5b01a107a))
+* **deps:** bump console from 0.16.3 to 0.16.4 ([3848e41](https://github.com/narnaud/use/commit/3848e4145ab4582e8591e7696ad6251249f488f9))
+* **deps:** bump regex from 1.12.4 to 1.13.1 ([f4b461d](https://github.com/narnaud/use/commit/f4b461d432130571c38ad9347bcd4e97329ec4f8))
+* **deps:** bump serde from 1.0.228 to 1.0.229 ([b34c32a](https://github.com/narnaud/use/commit/b34c32ac18fc3173e2ea1d50d2f21f6433abddc7))
+* **deps:** bump which from 8.0.4 to 8.0.5 ([ca2f156](https://github.com/narnaud/use/commit/ca2f156625a9a6868dbc25995ba14cb24e2e9511))
+* **deps:** bump yaml_serde from 0.10.4 to 0.10.5 ([fb1daaa](https://github.com/narnaud/use/commit/fb1daaa0fc62cff4ac601688132e0996f67ec916))
+
 ## [1.4.1](https://github.com/narnaud/use/compare/v1.4.0...v1.4.1) (2026-06-21)
 
 
